@@ -1,0 +1,64 @@
+/* ===== TODA LA PÁGINA ===== */
+body {
+  font-family: Arial, sans-serif; /* Letra lisa; si no hay Arial, usa otra parecida */
+}
+
+/* ===== TÍTULO DE ARRIBA ===== */
+h1 {
+  text-align: center; /* Centrado */
+  color: #22b14c;     /* Verde */
+}
+
+/* ===== CAJITA QUE AGRUPA BARRA + NOMBRE ===== */
+.necesidad {
+  width: fit-content;       /* Mide solo lo que ocupa su contenido */
+  text-align: center;       /* Centra el nombre debajo de la barra */
+  margin: 60px 0 0 40px;    /* Espacio afuera: arriba, derecha, abajo, izquierda */
+}
+
+/* ===== EL MARCO NEGRO (EL VASO) ===== */
+.barra {
+  width: 70px;                /* Ancho */
+  height: 130px;              /* Alto */
+  border: 4px solid black;    /* Borde negro de 4px */
+  display: flex;              /* Activa el modo de acomodar cosas adentro */
+  flex-direction: column;     /* Acomoda lo de adentro en columna (vertical) */
+  justify-content: flex-end;  /* Lo pega abajo, para que se llene desde el piso */
+ margin: 0 auto;  /* Centra la barra dentro de su cajita */
+}
+
+/* ===== LO VERDE DE ADENTRO (EL LÍQUIDO) ===== */
+.relleno {
+  width: 100%;          /* Ocupa todo el ancho del vaso */
+  background: #22b14c;  /* Verde. La altura la pone JavaScript */
+    transition: background 1s;  /* El color cambia suavemente en 1 segundo */
+}
+
+/* ===== PANEL QUE CONTIENE TODAS LAS BARRAS ===== */
+#panel {
+  display: flex;           /* Pone las barras una al lado de la otra */
+  flex-wrap: wrap;         /* Si no caben (celular), pasan al siguiente renglón */
+  gap: 30px;               /* Espacio entre barra y barra */
+  margin: 60px 40px 0;     /* Arriba 60, a los lados 40, abajo 0 */
+    justify-content: center;  /* Centra el grupo de barras en la pantalla */
+}
+
+/* ===== NOMBRE DEBAJO DE LA BARRA ===== */
+.necesidad p {
+  color: #22b14c;
+  font-weight: bold;
+  font-size: 22px;
+}
+
+/* ===== CAJITA QUE AGRUPA BARRA + NOMBRE + BOTONES ===== */
+.necesidad {
+  width: 130px;            /* Todas del mismo ancho, así quedan parejas */
+  text-align: center;      /* Centra el nombre */
+}
+
+/* ===== BOTONES DEBAJO DE LA BARRA ===== */
+.necesidad button {
+  display: block;   /* Cada botón en su propio renglón, uno debajo del otro */
+  margin: 6px auto; /* 6px de espacio arriba y abajo; auto a los lados para centrarlo */
+  width: 100%;      /* Los dos del mismo ancho, para que se vean parejos */
+}
