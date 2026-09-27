@@ -1,6 +1,12 @@
 // ===== CONFIGURACIÓN =====
-// Cuánto tarda cada barra en vaciarse (10 minutos para probar)
-const DURACION = 48 * 60 * 60 * 1000; // 2 días
+// Duración que usa una barra si nunca le he configurado una (2 días)
+const DURACION_POR_DEFECTO = 48 * 60 * 60 * 1000;
+
+// Cuántos milisegundos tiene cada unidad
+const UNIDADES = {
+  horas: 60 * 60 * 1000,
+  dias: 24 * 60 * 60 * 1000,
+};
 
 // ===== LISTA DE ACTIVIDADES =====
 // Para agregar una barra nueva, solo agrega un renglón aquí
@@ -24,10 +30,25 @@ function leerUltimaVez(id) {
   return Number(guardado);
 }
 
+// Lee de la libreta cuánto tarda esta barra en vaciarse
+// Si nunca la he configurado, usa la de por defecto
+function leerDuracion(id) {
+  const guardado = localStorage.getItem(id + "-duracion");
+  if (guardado === null) return DURACION_POR_DEFECTO;
+  return Number(guardado);
+}
+
+// Guarda la duración nueva, convertida a milisegundos
+function guardarDuracion(id, cantidad, unidad) {
+  localStorage.setItem(id + "-duracion", cantidad * UNIDADES[unidad]);
+  localStorage.setItem(id + "-unidad", unidad);
+  actualizarBarra(id);
+}
+
 // Calcula qué tan llena está la barra de esta actividad
 function calcularPorcentaje(id) {
   const tiempoPasado = Date.now() - leerUltimaVez(id);
-  let porcentaje = 100 - (tiempoPasado / DURACION) * 100;
+  let porcentaje = 100 - (tiempoPasado / leerDuracion(id)) * 100;
   if (porcentaje < 0) porcentaje = 0;
   return porcentaje;
 }
@@ -47,6 +68,15 @@ function deshacer(id) {
   localStorage.setItem(id + "-ultimaVez", anterior);
   localStorage.removeItem(id + "-anterior");
   actualizarBarra(id);
+}
+
+// Abre o cierra la cajita de ajustes, rellenándola con lo que ya está guardado
+function abrirAjustes(id) {
+  const caja = document.getElementById("caja-" + id);
+  const unidad = localStorage.getItem(id + "-unidad") || "dias";
+  document.getElementById("cantidad-" + id).value = leerDuracion(id) / UNIDADES[unidad];
+  document.getElementById("unidad-" + id).value = unidad;
+  caja.hidden = !caja.hidden;
 }
 
 // ===== FUNCIONES DE PANTALLA =====
@@ -85,17 +115,41 @@ function crearBarra(actividad) {
       <p>${actividad.nombre}</p>
       <button id="boton-${actividad.id}">${actividad.boton}</button>
       <button id="deshacer-${actividad.id}">Deshacer</button>
+      <button id="ajustes-${actividad.id}">⚙️ Duración</button>
+      <div class="ajustes" id="caja-${actividad.id}" hidden>
+        <input type="number" id="cantidad-${actividad.id}" min="1">
+        <select id="unidad-${actividad.id}">
+          <option value="horas">Horas</option>
+          <option value="dias">Días</option>
+        </select>
+        <button id="guardar-${actividad.id}">Guardar</button>
+      </div>
     </div>
   `);
 
-  // Conecta los dos botones de esta barra
+  // Conecta los botones de recargar y deshacer
   document.getElementById("boton-" + actividad.id).onclick = function () {
     recargar(actividad.id);
   };
   document.getElementById("deshacer-" + actividad.id).onclick = function () {
     deshacer(actividad.id);
   };
+
+  // Conecta el botón que abre la cajita de ajustes
+  document.getElementById("ajustes-" + actividad.id).onclick = function () {
+    abrirAjustes(actividad.id);
+  };
+
+  // Conecta el botón de guardar la duración
+  document.getElementById("guardar-" + actividad.id).onclick = function () {
+    const cantidad = Number(document.getElementById("cantidad-" + actividad.id).value);
+    const unidad = document.getElementById("unidad-" + actividad.id).value;
+    if (cantidad <= 0) return; // No deja guardar cero ni números negativos
+    guardarDuracion(actividad.id, cantidad, unidad);
+    document.getElementById("caja-" + actividad.id).hidden = true;
+  };
 }
+
 
 // ===== ARRANQUE =====
 // Fabrica una barra por cada actividad de la lista

@@ -62,3 +62,11 @@ h1 {
   margin: 6px auto; /* 6px de espacio arriba y abajo; auto a los lados para centrarlo */
   width: 100%;      /* Los dos del mismo ancho, para que se vean parejos */
 }
+
+/* ===== CAJITA DE AJUSTES DE DURACIÓN ===== */
+.ajustes input,
+.ajustes select {
+  width: 100%;             /* Del mismo ancho que los botones */
+  box-sizing: border-box;  /* Que el borde no lo haga más ancho */
+  margin: 4px 0;           /* Un poquito de espacio entre uno y otro */
+}
