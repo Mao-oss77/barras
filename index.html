@@ -21,6 +21,19 @@
   <!-- Panel vacío: JavaScript va a meter aquí todas las barras -->
   <div id="panel"></div>
 
+  
+  <!-- Zona para agregar barras nuevas -->
+  <div id="zona-agregar">
+    <button id="abrir-agregar">➕ Nueva barra</button>
+    <div class="ajustes" id="caja-agregar" hidden>
+      <small>Nombre de la barra:</small>
+      <input type="text" id="nuevo-nombre" maxlength="20" placeholder="Ej: Cocinar">
+      <small>Texto del botón:</small>
+      <input type="text" id="nuevo-boton" maxlength="20" placeholder="Ej: Cociné">
+      <button id="confirmar-agregar">Agregar</button>
+    </div>
+  </div>
+
   <!-- Conecta JavaScript -->
   <script src="app.js"></script>
 </body>

@@ -70,3 +70,45 @@ h1 {
   box-sizing: border-box;  /* Que el borde no lo haga más ancho */
   margin: 4px 0;           /* Un poquito de espacio entre uno y otro */
 }
+/* ===== OCULTAR DE VERDAD LO QUE TIENE "hidden" ===== */
+/* Sin esto, el "display: block" de los botones les gana y no se esconden */
+[hidden] {
+  display: none !important;
+}
+
+/* ===== BARRA EN MODO MANUAL (ARRASTRABLE) ===== */
+.barra.manual {
+  border-style: dashed;  /* Borde punteado: pista visual de que se puede arrastrar */
+  cursor: ns-resize;     /* En PC, el mouse se vuelve una flechita de arriba-abajo */
+  touch-action: none;    /* En el celular, arrastrar la barra no mueve la página */
+  user-select: none;     /* Que no se seleccione texto al arrastrar */
+  -webkit-user-select: none;
+}
+
+/* ===== TEXTOS PEQUEÑOS (PISTA Y ETIQUETAS DE AJUSTES) ===== */
+.pista,
+.ajustes small {
+  display: block;   /* Cada uno en su propio renglón */
+  font-size: 13px;  /* Letra pequeña */
+  color: #555;      /* Gris oscuro */
+  margin: 4px 0;
+}
+
+
+/* ===== BOTÓN DE QUITAR BARRA ===== */
+.boton-quitar {
+  color: #e03131;  /* Letra roja, para que se note que es peligroso */
+}
+
+/* ===== ZONA DE AGREGAR BARRA NUEVA ===== */
+#zona-agregar {
+  width: 200px;           /* Ancho de la zona */
+  margin: 40px auto;      /* Espacio arriba y abajo; centrada a los lados */
+  text-align: center;
+}
+
+#zona-agregar button {
+  display: block;   /* Cada botón en su renglón */
+  width: 100%;      /* Del ancho de la zona */
+  margin: 6px 0;
+}
