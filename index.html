@@ -18,20 +18,28 @@
   <!-- Título grande de arriba -->
   <h1>Nivel de satisfacción</h1>
 
-  <!-- Panel vacío: JavaScript va a meter aquí todas las barras -->
-  <div id="panel"></div>
+  <!-- Pestañas: cada botón muestra un grupo de barras -->
+  <div id="pestanas">
+    <button class="pestana activa" id="pestana-satisfaccion">Satisfacción</button>
+    <button class="pestana" id="pestana-desarrollo">Desarrollo</button>
+  </div>
 
-  
-  <!-- Zona para agregar barras nuevas -->
-  <div id="zona-agregar">
-    <button id="abrir-agregar">➕ Nueva barra</button>
-    <div class="ajustes" id="caja-agregar" hidden>
-      <small>Nombre de la barra:</small>
-      <input type="text" id="nuevo-nombre" maxlength="20" placeholder="Ej: Cocinar">
-      <small>Texto del botón:</small>
-      <input type="text" id="nuevo-boton" maxlength="20" placeholder="Ej: Cociné">
-      <button id="confirmar-agregar">Agregar</button>
+  <!-- Panel: JavaScript mete las barras aquí, antes de la tarjeta de agregar -->
+  <div id="panel">
+
+    <!-- Tarjeta para agregar barras nuevas (siempre queda de última) -->
+    <div class="necesidad tarjeta-agregar" id="tarjeta-agregar">
+      <button class="barra-agregar" id="abrir-agregar" aria-label="Nueva barra">+</button>
+      <p>Nueva barra</p>
+      <div class="ajustes" id="caja-agregar" hidden>
+        <small>Nombre de la barra:</small>
+        <input type="text" id="nuevo-nombre" maxlength="20" placeholder="Ej: Cocinar">
+        <small>Texto del botón:</small>
+        <input type="text" id="nuevo-boton" maxlength="20" placeholder="Ej: Cociné">
+        <button id="confirmar-agregar">Agregar</button>
+      </div>
     </div>
+
   </div>
 
   <!-- Conecta JavaScript -->

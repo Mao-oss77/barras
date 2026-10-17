@@ -7,14 +7,9 @@ body {
 h1 {
   text-align: center; /* Centrado */
   color: #22b14c;     /* Verde */
+  font-size: 28px;
 }
 
-/* ===== CAJITA QUE AGRUPA BARRA + NOMBRE ===== */
-.necesidad {
-  width: fit-content;       /* Mide solo lo que ocupa su contenido */
-  text-align: center;       /* Centra el nombre debajo de la barra */
-  margin: 60px 0 0 40px;    /* Espacio afuera: arriba, derecha, abajo, izquierda */
-}
 
 /* ===== EL MARCO NEGRO (EL VASO) ===== */
 .barra {
@@ -36,25 +31,33 @@ h1 {
 
 /* ===== PANEL QUE CONTIENE TODAS LAS BARRAS ===== */
 #panel {
-  display: flex;           /* Pone las barras una al lado de la otra */
-  flex-wrap: wrap;         /* Si no caben (celular), pasan al siguiente renglón */
-  gap: 30px;               /* Espacio entre barra y barra */
-  margin: 60px 40px 0;     /* Arriba 60, a los lados 40, abajo 0 */
-    justify-content: center;  /* Centra el grupo de barras en la pantalla */
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+  max-width: 700px;
+  margin: 20px auto 0;
+  padding: 0 12px;
+  align-items: start;
+}
+
+/* ===== TARJETA DE CADA BARRA ===== */
+.necesidad {
+  text-align: center;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  padding: 12px 8px;
+  min-width: 0;
+  position: relative;
 }
 
 /* ===== NOMBRE DEBAJO DE LA BARRA ===== */
 .necesidad p {
   color: #22b14c;
   font-weight: bold;
-  font-size: 22px;
+  font-size: 18px;
+  margin: 8px 0;
 }
 
-/* ===== CAJITA QUE AGRUPA BARRA + NOMBRE + BOTONES ===== */
-.necesidad {
-  width: 130px;            /* Todas del mismo ancho, así quedan parejas */
-  text-align: center;      /* Centra el nombre */
-}
 
 /* ===== BOTONES DEBAJO DE LA BARRA ===== */
 .necesidad button {
@@ -100,15 +103,71 @@ h1 {
   color: #e03131;  /* Letra roja, para que se note que es peligroso */
 }
 
-/* ===== ZONA DE AGREGAR BARRA NUEVA ===== */
-#zona-agregar {
-  width: 200px;           /* Ancho de la zona */
-  margin: 40px auto;      /* Espacio arriba y abajo; centrada a los lados */
-  text-align: center;
+/* ===== BOTÓN ⋮ EN LA ESQUINA DE LA TARJETA ===== */
+.necesidad .boton-menu {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 32px;
+  height: 32px;
+  margin: 0;
+  border: none;
+  background: none;
+  font-size: 22px;
+  cursor: pointer;
 }
 
-#zona-agregar button {
-  display: block;   /* Cada botón en su renglón */
-  width: 100%;      /* Del ancho de la zona */
-  margin: 6px 0;
+/* ===== TARJETA DE AGREGAR BARRA ===== */
+.tarjeta-agregar {
+  border-style: dashed;   /* Borde punteado: se nota que es distinta */
+}
+
+.tarjeta-agregar p {
+  color: #999;            /* Nombre en gris en vez de verde */
+}
+
+/* La "barra" vacía con el + adentro */
+.necesidad .barra-agregar {
+  width: 78px;              /* Mismo tamaño que las barras (70 + bordes) */
+  height: 138px;            /* (130 + bordes) */
+  margin: 0 auto;           /* Centrada */
+  border: 4px dashed #bbb;  /* Borde gris punteado */
+  background: none;         /* Sin fondo */
+  font-size: 50px;          /* El + grandote */
+  color: #bbb;
+  cursor: pointer;
+}
+
+/* ===== PESTAÑAS DE ARRIBA ===== */
+#pestanas {
+  display: flex;            /* Una al lado de la otra */
+  justify-content: center;  /* Centradas */
+  gap: 8px;
+  margin: 0 12px;
+}
+
+.pestana {
+  flex: 1;                     /* Las dos del mismo ancho */
+  max-width: 180px;
+  padding: 10px;
+  font-size: 16px;
+  border: 2px solid #22b14c;   /* Borde verde */
+  border-radius: 20px;         /* Forma de píldora */
+  background: white;
+  color: #22b14c;
+  cursor: pointer;
+}
+
+/* La pestaña que estoy viendo se pinta de verde */
+.pestana.activa {
+  background: #22b14c;
+  color: white;
+}
+
+/* ===== TEXTO DE NIVEL (SOLO EN DESARROLLO) ===== */
+.nivel {
+  display: block;
+  font-size: 13px;
+  color: #555;
+  margin-bottom: 6px;
 }
