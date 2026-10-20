@@ -22,6 +22,7 @@
   <div id="pestanas">
     <button class="pestana activa" id="pestana-satisfaccion">Satisfacción</button>
     <button class="pestana" id="pestana-desarrollo">Desarrollo</button>
+    <button class="pestana" id="pestana-emociones">Emociones</button>
   </div>
 
   <!-- Panel: JavaScript mete las barras aquí, antes de la tarjeta de agregar -->
@@ -37,6 +38,12 @@
         <small>Texto del botón:</small>
         <input type="text" id="nuevo-boton" maxlength="20" placeholder="Ej: Cociné">
         <button id="confirmar-agregar">Agregar</button>
+
+        <!-- Emociones listas para agregar con un toque (solo salen en la pestaña Emociones) -->
+        <div id="preestablecidas" hidden>
+          <small>Preestablecidas:</small>
+          <div id="chips"></div>
+        </div>
       </div>
     </div>
 

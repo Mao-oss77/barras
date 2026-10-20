@@ -19,14 +19,15 @@ h1 {
   display: flex;              /* Activa el modo de acomodar cosas adentro */
   flex-direction: column;     /* Acomoda lo de adentro en columna (vertical) */
   justify-content: flex-end;  /* Lo pega abajo, para que se llene desde el piso */
- margin: 0 auto;  /* Centra la barra dentro de su cajita */
+  margin: 0 auto;             /* Centra la barra dentro de su cajita */
+  transition: transform 0.15s; /* El agrandado al agarrarla se ve suave */
 }
 
 /* ===== LO VERDE DE ADENTRO (EL LÍQUIDO) ===== */
 .relleno {
   width: 100%;          /* Ocupa todo el ancho del vaso */
   background: #22b14c;  /* Verde. La altura la pone JavaScript */
-    transition: background 1s;  /* El color cambia suavemente en 1 segundo */
+  transition: background 1s;  /* El color cambia suavemente en 1 segundo */
 }
 
 /* ===== PANEL QUE CONTIENE TODAS LAS BARRAS ===== */
@@ -80,12 +81,20 @@ h1 {
 }
 
 /* ===== BARRA EN MODO MANUAL (ARRASTRABLE) ===== */
+/* Ya NO bloquea el deslizamiento de la página: eso lo decide JavaScript
+   solo cuando el dedo se mantiene quieto sobre la barra */
 .barra.manual {
   border-style: dashed;  /* Borde punteado: pista visual de que se puede arrastrar */
   cursor: ns-resize;     /* En PC, el mouse se vuelve una flechita de arriba-abajo */
-  touch-action: none;    /* En el celular, arrastrar la barra no mueve la página */
   user-select: none;     /* Que no se seleccione texto al arrastrar */
   -webkit-user-select: none;
+  -webkit-touch-callout: none; /* En iPhone, que no salga el menú al mantener hundido */
+}
+
+/* ===== BARRA AGARRADA (YA SE PUEDE ARRASTRAR) ===== */
+.barra.agarrada {
+  transform: scale(1.08);                    /* Se agranda un poquito */
+  box-shadow: 0 0 0 4px rgba(34, 177, 76, 0.35); /* Halo verde alrededor */
 }
 
 /* ===== TEXTOS PEQUEÑOS (PISTA Y ETIQUETAS DE AJUSTES) ===== */
@@ -147,10 +156,11 @@ h1 {
 }
 
 .pestana {
-  flex: 1;                     /* Las dos del mismo ancho */
+  flex: 1;                     /* Las tres del mismo ancho */
+  min-width: 0;                /* Que puedan encogerse en el celular */
   max-width: 180px;
-  padding: 10px;
-  font-size: 16px;
+  padding: 10px 4px;           /* Poco espacio a los lados para que quepan las tres */
+  font-size: 15px;
   border: 2px solid #22b14c;   /* Borde verde */
   border-radius: 20px;         /* Forma de píldora */
   background: white;
@@ -164,10 +174,59 @@ h1 {
   color: white;
 }
 
-/* ===== TEXTO DE NIVEL (SOLO EN DESARROLLO) ===== */
+/* ===== PESTAÑA DE EMOCIONES (EN ROSADO) ===== */
+#pestana-emociones {
+  border-color: #e8667a;
+  color: #e8667a;
+}
+
+#pestana-emociones.activa {
+  background: #e8667a;
+  color: white;
+}
+
+/* ===== TARJETAS DE EMOCIONES ===== */
+.necesidad.emocion p {
+  color: #e8667a;  /* Nombre en rojito rosado en vez de verde */
+}
+
+/* ===== EMOCIONES PREESTABLECIDAS (BOTONCITOS DE UN TOQUE) ===== */
+#chips {
+  display: flex;
+  flex-wrap: wrap;          /* Si no caben, bajan al siguiente renglón */
+  justify-content: center;
+  gap: 4px;
+}
+
+.necesidad #chips button {
+  display: inline-block;    /* Uno al lado del otro, no uno debajo del otro */
+  width: auto;              /* Del tamaño de su palabra */
+  margin: 0;
+  padding: 4px 8px;
+  font-size: 13px;
+  border: 1px solid #e8667a;
+  border-radius: 12px;      /* Forma de píldora */
+  background: white;
+  color: #e8667a;
+  cursor: pointer;
+}
+
+/* ===== ETIQUETA DE NIVEL (SOLO EN DESARROLLO) ===== */
+/* Píldora de color; el color (bronce, plata, oro...) lo pone JavaScript */
 .nivel {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: bold;
+  color: white;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3); /* Que se lea sobre el oro y la plata */
+}
+
+/* ===== CONTEO DE RELLENOS (SOLO EN DESARROLLO) ===== */
+.conteo {
   display: block;
   font-size: 13px;
   color: #555;
-  margin-bottom: 6px;
+  margin: 4px 0;
 }
