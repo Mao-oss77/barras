@@ -10,7 +10,9 @@
   <!-- Nombre que sale en la pestaña del navegador -->
   <title>Nivel de satisfacción</title>
   <!-- Conecta el archivo de estilos (colores, tamaños, posiciones) -->
-  <link rel="stylesheet" href="estilos.css">
+  <!-- El "?v=" es la versión: cada vez que cambie estilos.css, app.js o nube.js, hay que subir ese número
+       (en los tres a la vez). Así el celular sabe que tiene que pedirlos de nuevo y no mezcla viejos con nuevos. -->
+  <link rel="stylesheet" href="estilos.css?v=2">
 </head>
 
 <!-- ===== CUERPO: todo lo que SÍ se ve en la página ===== -->
@@ -100,7 +102,7 @@
 
   <!-- Conecta JavaScript: la librería de Supabase (la nube), la app, y la parte de la nube -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
-  <script src="app.js"></script>
-  <script src="nube.js"></script>
+  <script src="app.js?v=2"></script>
+  <script src="nube.js?v=2"></script>
 </body>
 </html>
