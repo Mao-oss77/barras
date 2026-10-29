@@ -18,12 +18,21 @@
   <!-- Título grande de arriba -->
   <h1>Nivel de satisfacción</h1>
 
-  <!-- Pestañas: cada botón muestra un grupo de barras -->
-  <div id="pestanas">
-    <button class="pestana activa" id="pestana-satisfaccion">Satisfacción</button>
-    <button class="pestana" id="pestana-desarrollo">Desarrollo</button>
-    <button class="pestana" id="pestana-emociones">Emociones</button>
+  <!-- Menú ☰ de la esquina: inicio de sesión, respaldo y grupos -->
+  <button id="boton-menu-principal" aria-label="Menú">☰</button>
+  <div id="menu-principal" hidden>
+    <button id="exportar">💾 Guardar respaldo</button>
+    <button id="importar">📂 Cargar respaldo</button>
+    <button id="renombrar-grupo">✏️ Renombrar este grupo</button>
+    <button id="borrar-grupo">🗑️ Borrar este grupo</button>
+    <!-- Dice "Iniciar sesión" o "Cerrar sesión" según el caso (lo pone nube.js) -->
+    <button id="boton-sesion">👤 Iniciar sesión</button>
+    <!-- Selector de archivos escondido: lo abre el botón "Cargar respaldo" -->
+    <input type="file" id="archivo-respaldo" accept=".json,application/json" hidden>
   </div>
+
+  <!-- Pestañas: una por cada grupo, más el "+" para crear otro (las fabrica JavaScript) -->
+  <div id="pestanas"></div>
 
   <!-- Panel: JavaScript mete las barras aquí, antes de la tarjeta de agregar -->
   <div id="panel">
@@ -35,12 +44,17 @@
       <div class="ajustes" id="caja-agregar" hidden>
         <small>Nombre de la barra:</small>
         <input type="text" id="nuevo-nombre" maxlength="20" placeholder="Ej: Cocinar">
-        <small>Texto del botón:</small>
-        <input type="text" id="nuevo-boton" maxlength="20" placeholder="Ej: Cociné">
+        <small>Tipo de barra:</small>
+        <select id="nuevo-tipo"></select>
+        <!-- Las de arrastre no tienen botón, así que este campo se esconde -->
+        <div id="campo-boton">
+          <small>Texto del botón:</small>
+          <input type="text" id="nuevo-boton" maxlength="20" placeholder="Ej: Cociné">
+        </div>
         <button id="confirmar-agregar">Agregar</button>
 
-        <!-- Emociones listas para agregar con un toque (solo salen en la pestaña Emociones) -->
-        <div id="preestablecidas" hidden>
+        <!-- Barras listas para agregar con un toque (solo salen en el grupo Satisfacción) -->
+        <div id="preestablecidas">
           <small>Preestablecidas:</small>
           <div id="chips"></div>
         </div>
@@ -49,7 +63,44 @@
 
   </div>
 
-  <!-- Conecta JavaScript -->
+  <!-- Papelera: aparece abajo solo mientras llevo una tarjeta o una pestaña -->
+  <div id="papelera" hidden>🗑️ Suelta aquí para borrar</div>
+
+  <!-- Ventana de iniciar sesión: correo → enlace en el correo → (si hace falta) elegir qué barras usar -->
+  <div id="ventana-sesion" hidden>
+    <div class="ventana">
+      <button class="cerrar-ventana" id="cerrar-ventana" aria-label="Cerrar">✕</button>
+      <h2>Iniciar sesión</h2>
+
+      <!-- Paso 1: escribir el correo -->
+      <div id="paso-correo">
+        <p>Escribe tu correo y te enviamos un enlace para entrar. Así tus barras quedan guardadas en la nube.</p>
+        <input type="email" id="correo" placeholder="tucorreo@ejemplo.com" autocomplete="email">
+        <button id="enviar-enlace">Enviar enlace</button>
+      </div>
+
+      <!-- Paso 2: ir al correo y tocar el enlace -->
+      <div id="paso-enlace" hidden>
+        <p>📬 Revisa tu correo y toca <b>"Sign in"</b>.</p>
+        <small>Ábrelo en este mismo dispositivo. Si no llega, mira en la carpeta de spam.</small>
+        <button class="boton-texto" id="otro-correo">Usar otro correo</button>
+      </div>
+
+      <!-- Paso 3 (solo si la cuenta ya tenía barras): elegir cuáles se quedan -->
+      <div id="paso-elegir" hidden>
+        <p>Esta cuenta ya tiene barras guardadas en la nube. ¿Cuáles quieres usar?</p>
+        <button id="usar-nube">☁️ Las de la nube</button>
+        <button id="usar-dispositivo">📱 Las de este dispositivo</button>
+        <small>Las que no elijas se reemplazan.</small>
+      </div>
+
+      <p id="mensaje-sesion"></p>
+    </div>
+  </div>
+
+  <!-- Conecta JavaScript: la librería de Supabase (la nube), la app, y la parte de la nube -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
   <script src="app.js"></script>
+  <script src="nube.js"></script>
 </body>
 </html>

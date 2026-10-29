@@ -8,18 +8,29 @@ const UNIDADES = {
   dias: 24 * 60 * 60 * 1000,
 };
 
-// Modo de llenado que usa una barra si nunca le he configurado uno
-// "completo": un clic llena la barra entera
-// "manual":   arrastro la barra hasta el nivel que yo quiera
-const MODO_POR_DEFECTO = "completo";
-
 // Cuánto hay que mantener el dedo quieto sobre la barra antes de poder arrastrarla (milisegundos)
 // Si el dedo se mueve antes de ese tiempo, se entiende que quería deslizar la página
 const ESPERA_ARRASTRE = 300;
 
-// ===== DESARROLLO (RELLENOS Y NIVELES) =====
-// En Desarrollo las barras se vacían igual que en Satisfacción,
-// pero además cuentan cuántas veces las he llenado y con eso suben de nivel
+// Cuánto hay que mantener el dedo quieto sobre una tarjeta para despegarla y cambiarla de puesto
+const ESPERA_MOVER = 500;
+
+// Con el mouse no hay espera: la tarjeta se despega al moverla estos píxeles con el botón hundido
+const DISTANCIA_MOUSE = 6;
+
+// ===== TIPOS DE BARRA =====
+// El tipo dice cómo se llena una barra:
+// "clic":     un clic la llena entera
+// "arrastre": la arrastro hasta el nivel que yo quiera
+// "niveles":  un clic la llena, y además cuenta los rellenos para subir de nivel
+const TIPOS = {
+  clic:     "Un clic",
+  arrastre: "Arrastrando",
+  niveles:  "Con niveles",
+};
+
+// ===== BARRAS CON NIVELES =====
+// Se vacían igual que las demás, pero además cuentan cuántas veces las he llenado y con eso suben de nivel
 const RELLENOS_NIVEL_1 = 5;  // Rellenos para pasar el nivel 1; cada nivel pide 5 más (5, 10, 15...)
 
 // Para que un relleno cuente, la barra tiene que haber bajado al menos un cuarto (estar en 75% o menos).
@@ -30,31 +41,55 @@ const UMBRAL_RELLENO = 75;
 //                     bronce     plata      oro        diamante   maestro
 const COLORES_NIVEL = ["#cd7f32", "#a8a9ad", "#f2c200", "#4fc3f7", "#9b59b6"];
 
-// ===== EMOCIONES (LO QUE NOS PESA) =====
-// Aquí la barra funciona al revés: llena = me pesa mucho, vacía = ya se me pasó.
-// Arrancan vacías, se llenan arrastrando con el dedo y se van bajando solas.
-const DURACION_EMOCION = 24 * 60 * 60 * 1000; // Por defecto se pasa en 1 día (configurable)
+// ===== BARRAS PREESTABLECIDAS (SOLO EN SATISFACCIÓN) =====
+// Barras listas para agregar con un solo toque desde la tarjeta de "Nueva barra".
+// Si ya tengo una barra con el mismo nombre, esa no aparece.
+// "tipo" es opcional: si no lo pongo, se llena con un clic.
+const PREESTABLECIDAS = [
+  { nombre: "Música",      boton: "Hice música" },
+  { nombre: "Leer",        boton: "Leí" },
+  { nombre: "Series",      boton: "Vi series" },
+  { nombre: "Videojuegos", boton: "Jugué" },
+  { nombre: "Socializar",  boton: "Hablé con alguien", tipo: "arrastre" }, // Un saludo no basta: se llena arrastrando
+];
 
-// Emociones que se agregan con un solo toque desde la tarjeta de "Nueva barra"
-const PREESTABLECIDAS = ["Tristeza", "Ansiedad", "Angustia", "Rabia", "Estrés", "Soledad", "Miedo"];
+// Todo lo que una barra guarda en la libreta (para borrarlo cuando se quita la barra)
+// "-modo", "-puntos" y "-puntosAnterior" son de versiones viejas
+const DATOS_BARRA = ["-ultimaVez", "-duracion", "-unidad", "-anterior", "-modo",
+                     "-registro", "-contoRelleno", "-historial", "-anotoHistorial",
+                     "-puntos", "-puntosAnterior"];
 
-// Pestañas que existen (el nombre es el que va después de "pestana-" en el index.html)
-const PESTANAS = ["satisfaccion", "desarrollo", "emociones"];
+// ===== GRUPOS (LAS PESTAÑAS DE ARRIBA) =====
+// Cada persona arma sus propios grupos. Satisfacción siempre existe y va de primera,
+// porque es el origen de la app: no se puede borrar ni cambiar de nombre.
+const GRUPO_PRINCIPAL = { id: "satisfaccion", nombre: "Satisfacción" };
 
-// Pestaña que se está viendo ahora
-let pestanaActual = "satisfaccion";
+// Lee de la libreta los grupos de esta persona (si nunca los ha guardado, solo está Satisfacción)
+function leerGrupos() {
+  const guardado = localStorage.getItem("grupos");
+  if (guardado === null) return [GRUPO_PRINCIPAL];
+  return JSON.parse(guardado);
+}
+
+// Guarda la lista de grupos en la libreta
+function guardarGrupos() {
+  localStorage.setItem("grupos", JSON.stringify(grupos));
+}
+
+// La lista de grupos con la que trabaja la app mientras está abierta
+let grupos = leerGrupos();
+
+// Grupo que se está viendo ahora
+let grupoActual = GRUPO_PRINCIPAL.id;
 
 // ===== LISTA DE ACTIVIDADES =====
 // Barras con las que arranca alguien que abre la app por primera vez
 const ACTIVIDADES_INICIALES = [
-  { id: "series",      nombre: "Series",      boton: "Vi series" },
-  { id: "videojuegos", nombre: "Videojuegos", boton: "Jugué" },
-  { id: "musica",      nombre: "Música",      boton: "Hice música" },
-  { id: "proyectos",   nombre: "Proyectos",   boton: "Avancé" },
-  { id: "amigos",      nombre: "Amigos",      boton: "Hablé con amigos" },
-  { id: "ingles",      nombre: "Inglés",          boton: "Estudié",  tipo: "desarrollo" },
-  { id: "paneles",     nombre: "Paneles solares", boton: "Estudié",  tipo: "desarrollo" },
-  { id: "ejercicio",   nombre: "Ejercicio",       boton: "Entrené",  tipo: "desarrollo" },
+  { id: "series",      nombre: "Series",      boton: "Vi series",        grupo: "satisfaccion", tipo: "clic" },
+  { id: "videojuegos", nombre: "Videojuegos", boton: "Jugué",            grupo: "satisfaccion", tipo: "clic" },
+  { id: "musica",      nombre: "Música",      boton: "Hice música",      grupo: "satisfaccion", tipo: "clic" },
+  { id: "proyectos",   nombre: "Proyectos",   boton: "Avancé",           grupo: "satisfaccion", tipo: "clic" },
+  { id: "amigos",      nombre: "Amigos",      boton: "Hablé con amigos", grupo: "satisfaccion", tipo: "clic" },
 ];
 
 // Lee de la libreta la lista de barras de esta persona
@@ -76,23 +111,20 @@ let actividades = leerActividades();
 // ===== FUNCIONES DE DATOS =====
 // Lee de la libreta la última vez que hice esta actividad
 // Si nunca la he registrado, arranca con la barra llena
-// (las de emociones arrancan vacías: nadie empieza sintiéndose mal)
 function leerUltimaVez(id) {
   let guardado = localStorage.getItem(id + "-ultimaVez");
   if (guardado === null) {
     guardado = Date.now();
-    if (tipoDe(id) === "emociones") guardado = Date.now() - leerDuracion(id);
     localStorage.setItem(id + "-ultimaVez", guardado);
   }
   return Number(guardado);
 }
 
 // Lee de la libreta cuánto tarda esta barra en vaciarse
-// Si nunca la he configurado, usa la de por defecto (las de emociones, 1 día)
+// Si nunca la he configurado, usa la de por defecto
 function leerDuracion(id) {
   const guardado = localStorage.getItem(id + "-duracion");
   if (guardado !== null) return Number(guardado);
-  if (tipoDe(id) === "emociones") return DURACION_EMOCION;
   return DURACION_POR_DEFECTO;
 }
 
@@ -103,15 +135,18 @@ function guardarDuracion(id, cantidad, unidad) {
   actualizarBarra(id);
 }
 
-// Lee de la libreta el modo de llenado de esta barra
-function leerModo(id) {
-  return localStorage.getItem(id + "-modo") || MODO_POR_DEFECTO;
+// Dice de qué tipo es una barra (clic, arrastre o niveles)
+function tipoDe(id) {
+  return actividades.find(a => a.id === id).tipo;
 }
 
-// Guarda el modo de llenado y acomoda la barra en pantalla
-function guardarModo(id, modo) {
-  localStorage.setItem(id + "-modo", modo);
-  aplicarModo(id);
+// Cambia el tipo de una barra y la acomoda en pantalla
+// (si deja de ser "con niveles", sus rellenos se quedan guardados por si vuelve)
+function guardarTipo(id, tipo) {
+  actividades.find(a => a.id === id).tipo = tipo;
+  guardarActividades();
+  aplicarTipo(id);
+  actualizarBarra(id);
 }
 
 // Pone la barra en un nivel exacto (de 0 a 100)
@@ -131,14 +166,48 @@ function calcularPorcentaje(id) {
   return porcentaje;
 }
 
-// Dice de qué pestaña es una barra (las viejas, sin tipo, son de satisfacción)
-function tipoDe(id) {
-  const actividad = actividades.find(a => a.id === id);
-  return actividad.tipo || "satisfaccion";
+// Borra de la libreta todo lo que tenía guardado una barra
+function borrarDatos(id) {
+  for (const dato of DATOS_BARRA) {
+    localStorage.removeItem(id + dato);
+  }
 }
 
-// ===== REGISTRO DE RELLENOS (SOLO DESARROLLO) =====
-// Cada vez que lleno una barra de desarrollo, anoto la fecha y hora en una lista.
+// ===== HISTORIAL (TODAS LAS BARRAS) =====
+// Cada vez que lleno una barra, de cualquier tipo, anoto cuándo fue, cómo estaba y cómo quedó.
+// NO se muestra en la pantalla principal (ver cuánto hace que no hago algo se siente feo):
+// es para el informe.
+// Cada anotación es [hora, nivel antes, nivel después], con los niveles redondeados de 0 a 100.
+// Ej: [1793248937776, 40, 100] = la llené del 40% al 100% en ese momento
+
+// Lee el historial de una barra
+function leerHistorial(id) {
+  return JSON.parse(localStorage.getItem(id + "-historial") || "[]");
+}
+
+// Anota un llenado con la hora de ahora
+// y deja una marca para que Deshacer sepa que tiene que borrarlo
+// (si hay sesión iniciada, nube.js la sube también)
+function anotarHistorial(id, antes, despues) {
+  const historial = leerHistorial(id);
+  const fila = [Date.now(), Math.round(antes), Math.round(despues)];
+  historial.push(fila);
+  localStorage.setItem(id + "-historial", JSON.stringify(historial));
+  localStorage.setItem(id + "-anotoHistorial", "si");
+  if (typeof nubeAnotar === "function") nubeAnotar(id, fila);
+}
+
+// Borra la última anotación (lo usa Deshacer)
+function borrarUltimoHistorial(id) {
+  const historial = leerHistorial(id);
+  const fila = historial.pop(); // Quita la última de la lista
+  localStorage.setItem(id + "-historial", JSON.stringify(historial));
+  localStorage.removeItem(id + "-anotoHistorial");
+  if (fila && typeof nubeBorrar === "function") nubeBorrar(id, fila[0]);
+}
+
+// ===== REGISTRO DE RELLENOS (SOLO BARRAS CON NIVELES) =====
+// Cada vez que lleno una barra con niveles, anoto la fecha y hora en una lista.
 // Con esa lista sé cuántas veces la he llenado hoy, este mes y en total.
 // (Esta lista también servirá después para el informe mensual)
 
@@ -192,29 +261,32 @@ function calcularNivel(rellenosTotales) {
 }
 
 // ===== FUNCIONES DE BOTONES =====
-// Recarga la barra, anotando antes la hora vieja por si me equivoqué
-// En desarrollo, además cuenta un relleno (solo si la barra ya había bajado un cuarto)
+// Recarga la barra, anotando antes la hora vieja por si me equivoqué, y la anota en el historial
+// (aunque ya estuviera llena: si oprimí el botón, es que lo hice otra vez)
+// Si es con niveles, además cuenta un relleno (solo si la barra ya había bajado un cuarto)
 function recargar(id) {
   const nivelAntes = calcularPorcentaje(id);
   localStorage.setItem(id + "-anterior", leerUltimaVez(id));
   localStorage.setItem(id + "-ultimaVez", Date.now());
-  if (tipoDe(id) === "desarrollo") {
-    if (nivelAntes <= UMBRAL_RELLENO) {
-      anotarRelleno(id);
-    } else {
-      localStorage.removeItem(id + "-contoRelleno"); // Misma sesión: no suma
-    }
+  anotarHistorial(id, nivelAntes, 100);
+  if (tipoDe(id) === "niveles" && nivelAntes <= UMBRAL_RELLENO) {
+    anotarRelleno(id);
+  } else {
+    localStorage.removeItem(id + "-contoRelleno"); // Misma sesión (o no es con niveles): no suma
   }
   actualizarBarra(id);
 }
 
 // Deshace la última recarga de esta actividad
-// (y si esa recarga había contado un relleno, también lo borra)
+// (y si esa recarga había quedado en el historial o había contado un relleno, también los borra)
 function deshacer(id) {
   const anterior = localStorage.getItem(id + "-anterior");
   if (anterior === null) return;
   localStorage.setItem(id + "-ultimaVez", anterior);
   localStorage.removeItem(id + "-anterior");
+  if (localStorage.getItem(id + "-anotoHistorial") !== null) {
+    borrarUltimoHistorial(id);
+  }
   if (localStorage.getItem(id + "-contoRelleno") !== null) {
     borrarUltimoRelleno(id);
   }
@@ -227,11 +299,11 @@ function abrirAjustes(id) {
   const unidad = localStorage.getItem(id + "-unidad") || "dias";
   document.getElementById("cantidad-" + id).value = leerDuracion(id) / UNIDADES[unidad];
   document.getElementById("unidad-" + id).value = unidad;
-  document.getElementById("modo-" + id).value = leerModo(id);
+  document.getElementById("tipo-" + id).value = tipoDe(id);
   caja.hidden = !caja.hidden;
 }
 
-// Conecta el arrastre de la barra (solo hace algo en modo manual)
+// Conecta el arrastre de la barra (solo hace algo si es de tipo arrastre)
 // En el celular hay que MANTENER el dedo quieto un momento antes de arrastrar;
 // si el dedo se mueve enseguida, es que quería deslizar la página y la barra no se toca.
 // En el PC, con el mouse, se arrastra de una.
@@ -241,7 +313,7 @@ function conectarArrastre(id) {
   let temporizador = null;  // El reloj que cuenta el "mantener hundido"
   let inicioY = 0;          // Dónde puse el dedo
   let ultimoY = 0;          // Dónde está el dedo ahora
-  let nivelAntes = 0;       // Cómo estaba la barra antes de arrastrar
+  let nivelAntes = 0;       // Cómo estaba la barra antes de arrastrar (para el historial)
 
   // Convierte una altura de la pantalla en un porcentaje de la barra
   function nivelDesdeAltura(y) {
@@ -260,31 +332,28 @@ function conectarArrastre(id) {
     if (navigator.vibrate) navigator.vibrate(30); // Vibra cortico (si el celular puede)
     nivelAntes = calcularPorcentaje(id);
     localStorage.setItem(id + "-anterior", leerUltimaVez(id));
+    localStorage.removeItem(id + "-contoRelleno");   // Arrastrar nunca cuenta rellenos
+    localStorage.removeItem(id + "-anotoHistorial"); // Lo anoto al soltar, si cambió algo
     ponerNivel(id, nivelDesdeAltura(ultimoY));
   }
 
   // Termina el arrastre (o cancela la espera si nunca empezó)
+  // Si el nivel cambió, lo anoto en el historial
   function terminar() {
     clearTimeout(temporizador);
     temporizador = null;
     if (!arrastrando) return;
     arrastrando = false;
     barra.classList.remove("agarrada");
-
-    // En desarrollo: si la subí hasta arriba arrastrando, y antes había bajado un cuarto, cuenta como un relleno
-    if (tipoDe(id) === "desarrollo") {
-      if (nivelAntes <= UMBRAL_RELLENO && calcularPorcentaje(id) >= 99) {
-        anotarRelleno(id);
-      } else {
-        localStorage.removeItem(id + "-contoRelleno"); // Este arrastre no contó
-      }
-      actualizarBarra(id);
+    const nivelDespues = calcularPorcentaje(id);
+    if (Math.round(nivelDespues) !== Math.round(nivelAntes)) {
+      anotarHistorial(id, nivelAntes, nivelDespues);
     }
   }
 
   // Al tocar la barra
   barra.onpointerdown = function (evento) {
-    if (leerModo(id) !== "manual") return;
+    if (tipoDe(id) !== "arrastre") return;
     inicioY = evento.clientY;
     ultimoY = evento.clientY;
     if (evento.pointerType === "mouse") {   // PC: arrastra de una
@@ -320,21 +389,173 @@ function conectarArrastre(id) {
 
   // Que al mantener hundido no salga el menú del navegador
   barra.oncontextmenu = function (evento) {
-    if (leerModo(id) === "manual") evento.preventDefault();
+    if (tipoDe(id) === "arrastre") evento.preventDefault();
   };
 }
 
+// ===== DESPEGAR Y LLEVAR (TARJETAS Y PESTAÑAS, COMO LOS ÍCONOS DEL CELULAR) =====
+// En el celular: mantengo el dedo medio segundo, el elemento se "despega" y lo llevo a donde quiera.
+// En el PC: lo agarro con el mouse y lo muevo de una.
+// Si el dedo se mueve antes de tiempo, era para deslizar la página: no pasa nada.
+// Mientras lo llevo, abajo aparece la papelera: si lo suelto ahí, se borra (preguntando antes).
+// "acciones" dice qué hacer en cada caso:
+//   sePuedeAgarrar(tocado): si desde ese punto se puede agarrar (opcional; si no está, se puede siempre)
+//   alMover():              algo que hacer mientras lo llevo, como cambiar de puesto (opcional)
+//   alSoltar():             al soltarlo, caiga donde caiga (opcional)
+//   alBorrar():             al soltarlo en la papelera
+function hacerDespegable(elemento, acciones) {
+  const papelera = document.getElementById("papelera");
+  let apretado = false;     // ¿Tengo el dedo (o el mouse) hundido encima?
+  let moviendo = false;     // ¿Ya se despegó?
+  let recienMovido = false; // Para que soltarlo no cuente también como un clic
+  let temporizador = null;  // El reloj que cuenta el medio segundo
+  let inicioX = 0, inicioY = 0; // Dónde puse el dedo
+  let ultimoX = 0, ultimoY = 0; // Dónde está el dedo ahora
+  let agarreX = 0, agarreY = 0; // Dónde lo agarré, medido desde su esquina
+
+  // Dice si el dedo está encima de la papelera
+  function sobrePapelera() {
+    const caja = papelera.getBoundingClientRect();
+    return ultimoX >= caja.left && ultimoX <= caja.right && ultimoY >= caja.top && ultimoY <= caja.bottom;
+  }
+
+  // Se despega: anoto de dónde lo agarré, saco la papelera y aviso con una vibración
+  function empezar() {
+    temporizador = null;
+    moviendo = true;
+    const caja = elemento.getBoundingClientRect();
+    agarreX = inicioX - caja.left;
+    agarreY = inicioY - caja.top;
+    elemento.classList.add("levantada");
+    papelera.hidden = false;
+    if (navigator.vibrate) navigator.vibrate(30);
+    seguirDedo();
+  }
+
+  // Hace lo que toque mientras lo llevo y lo dibujo justo debajo del dedo
+  function seguirDedo() {
+    const encima = sobrePapelera();
+    papelera.classList.toggle("encima", encima);
+    if (!encima && acciones.alMover) acciones.alMover(ultimoX, ultimoY);
+    elemento.style.transform = ""; // Mido dónde quedaría quieto...
+    const caja = elemento.getBoundingClientRect();
+    const x = ultimoX - agarreX - caja.left; // ...y lo corro hasta el dedo
+    const y = ultimoY - agarreY - caja.top;
+    elemento.style.transform = "translate(" + x + "px, " + y + "px) scale(1.05)";
+  }
+
+  // Lo suelto: vuelve a su puesto, escondo la papelera, y si cayó en ella se borra
+  function terminar() {
+    apretado = false;
+    clearTimeout(temporizador);
+    temporizador = null;
+    if (!moviendo) return;
+    moviendo = false;
+    recienMovido = true;
+    setTimeout(function () { recienMovido = false; }, 0);
+    const enPapelera = sobrePapelera();
+    papelera.hidden = true;
+    papelera.classList.remove("encima");
+    elemento.classList.remove("levantada");
+    elemento.style.transform = "";
+    if (acciones.alSoltar) acciones.alSoltar();
+    if (enPapelera) acciones.alBorrar();
+  }
+
+  elemento.addEventListener("pointerdown", function (evento) {
+    if (acciones.sePuedeAgarrar && !acciones.sePuedeAgarrar(evento.target)) return;
+    apretado = true;
+    inicioX = ultimoX = evento.clientX;
+    inicioY = ultimoY = evento.clientY;
+    elemento.setPointerCapture(evento.pointerId); // Que siga recibiendo el dedo aunque se salga
+    if (evento.pointerType !== "mouse") temporizador = setTimeout(empezar, ESPERA_MOVER);
+  });
+
+  elemento.addEventListener("pointermove", function (evento) {
+    if (!apretado) return;
+    ultimoX = evento.clientX;
+    ultimoY = evento.clientY;
+    const distancia = Math.hypot(ultimoX - inicioX, ultimoY - inicioY);
+    if (moviendo) {
+      // Cerca del borde de arriba o de abajo, la página se desliza sola (menos encima de la papelera)
+      if (ultimoY < 60) window.scrollBy(0, -12);
+      if (ultimoY > window.innerHeight - 60 && !sobrePapelera()) window.scrollBy(0, 12);
+      seguirDedo();
+    } else if (evento.pointerType === "mouse") {
+      if (distancia > DISTANCIA_MOUSE) empezar();  // PC: se despega al mover el mouse
+    } else if (temporizador !== null && distancia > 10) {
+      clearTimeout(temporizador);  // Celular: se movió antes de tiempo, quería deslizar
+      temporizador = null;
+    }
+  });
+
+  elemento.addEventListener("pointerup", terminar);
+  elemento.addEventListener("pointercancel", terminar);
+
+  // Soltarlo no cuenta como clic (si no, al soltar una pestaña se abriría ese grupo)
+  elemento.addEventListener("click", function (evento) {
+    if (!recienMovido) return;
+    evento.stopImmediatePropagation();
+    evento.preventDefault();
+  }, true);
+
+  // Ya despegado, que el dedo NO deslice la página
+  elemento.addEventListener("touchmove", function (evento) {
+    if (moviendo) evento.preventDefault();
+  }, { passive: false });
+
+  // Que al mantener hundido no salga el menú del navegador
+  elemento.addEventListener("contextmenu", function (evento) {
+    if (!acciones.sePuedeAgarrar || acciones.sePuedeAgarrar(evento.target)) evento.preventDefault();
+  });
+}
+
+// Hace que una tarjeta se pueda llevar a otro puesto o a la papelera.
+// No se agarra desde los botones ni los ajustes, ni desde la barra si es de arrastre (ahí el dedo ajusta el nivel).
+// Si la suelto sin pasar por encima de otra tarjeta, se queda donde estaba.
+function conectarMover(id) {
+  const tarjeta = document.getElementById("necesidad-" + id);
+  hacerDespegable(tarjeta, {
+    sePuedeAgarrar: function (tocado) {
+      if (tocado.closest("button, input, select, .ajustes")) return false;
+      if (tocado.closest(".barra.manual")) return false;
+      return true;
+    },
+    // Si el dedo está sobre otra tarjeta, me cambio de puesto con ella
+    alMover: function (x, y) {
+      const otra = document.elementsFromPoint(x, y)
+        .map(elemento => elemento.closest(".necesidad"))
+        .find(t => t && t !== tarjeta && t.id !== "tarjeta-agregar");
+      if (!otra) return;
+      if (tarjeta.compareDocumentPosition(otra) & Node.DOCUMENT_POSITION_FOLLOWING) {
+        otra.after(tarjeta);  // La otra estaba después: me pongo detrás de ella
+      } else {
+        otra.before(tarjeta); // La otra estaba antes: me pongo delante de ella
+      }
+    },
+    // Guardo el orden como quedó en pantalla
+    alSoltar: function () {
+      const orden = [...document.querySelectorAll("#panel .necesidad")].map(t => t.id.replace("necesidad-", ""));
+      actividades.sort((a, b) => orden.indexOf(a.id) - orden.indexOf(b.id));
+      guardarActividades();
+    },
+    alBorrar: function () {
+      quitarActividad(id);
+    },
+  });
+}
+
 // Agrega una barra nueva al final de la lista y la pone en pantalla
-function agregarActividad(nombre, boton) {
-  const esEmocion = pestanaActual === "emociones";
+// Queda en el grupo que estoy viendo; si no digo el tipo, se llena con un clic
+function agregarActividad(nombre, boton, tipo) {
   const nueva = {
     id: "barra" + Date.now(), // Número único: los milisegundos de este instante
     nombre: nombre,
-    boton: boton || (esEmocion ? "Lo sentí" : "Lo hice"), // Si no escribió texto de botón, usa este
-    tipo: pestanaActual,       // Queda en la pestaña que estoy viendo
+    boton: boton || "Lo hice", // Si no escribió texto de botón, usa este
+    grupo: grupoActual,
+    tipo: tipo || "clic",
+    creada: Date.now(),        // Para el informe: desde cuándo existe esta barra
   };
-  // Las emociones se llenan arrastrando: el dedo dice qué tan fuerte es
-  if (esEmocion) localStorage.setItem(nueva.id + "-modo", "manual");
   actividades.push(nueva);
   guardarActividades();
   crearBarra(nueva);
@@ -342,7 +563,7 @@ function agregarActividad(nombre, boton) {
   actualizarPreestablecidas();
 }
 
-// Muestra solo las emociones preestablecidas que todavía no tengo agregadas
+// Muestra solo las barras preestablecidas que todavía no tengo agregadas
 function actualizarPreestablecidas() {
   const nombres = actividades.map(a => a.nombre.toLowerCase());
   for (const boton of document.querySelectorAll("#chips button")) {
@@ -353,60 +574,68 @@ function actualizarPreestablecidas() {
 // Quita una barra (preguntando antes) y borra todo lo que tenía guardado
 function quitarActividad(id) {
   const actividad = actividades.find(a => a.id === id);
-  if (!confirm("¿Quitar la barra " + actividad.nombre + "?")) return;
+  if (!confirm("¿Seguro que quieres quitar la barra " + actividad.nombre + "?")) return;
 
   actividades = actividades.filter(a => a.id !== id); // Deja todas menos esta
   guardarActividades();
   document.getElementById("necesidad-" + id).remove();
-
-  // Borra sus datos de la libreta
-  for (const dato of ["-ultimaVez", "-duracion", "-unidad", "-anterior", "-modo",
-                      "-registro", "-contoRelleno", "-puntos", "-puntosAnterior"]) {
-    localStorage.removeItem(id + dato);
-  }
+  borrarDatos(id);
   actualizarPreestablecidas(); // Si era preestablecida, vuelve a aparecer para agregarla
 }
 
-// Mueve una barra un puesto: antes (-1) o después (+1)
-function moverActividad(id, direccion) {
-  const i = actividades.findIndex(a => a.id === id); // Puesto actual
-  let j = i + direccion;                              // Puesto nuevo
-  // Salta las barras de la otra pestaña: solo me cambio con una de la mía
-  while (j >= 0 && j < actividades.length && tipoDe(actividades[j].id) !== tipoDe(id)) {
-    j = j + direccion;
-  }
-  if (j < 0 || j >= actividades.length) return;       // Ya está en la punta
+// ===== FUNCIONES DE GRUPOS =====
+// Pide un nombre y crea un grupo nuevo (vacío), y me lleva a verlo
+function crearGrupo() {
+  const nombre = (prompt("Nombre del grupo nuevo:") || "").trim().slice(0, 20);
+  if (nombre === "") return;
+  const nuevo = { id: "grupo" + Date.now(), nombre: nombre };
+  grupos.push(nuevo);
+  guardarGrupos();
+  mostrarGrupo(nuevo.id);
+}
 
-  // Intercambia las dos barras en la lista y la guarda
-  const vecina = actividades[j];
-  actividades[j] = actividades[i];
-  actividades[i] = vecina;
+// Cambia el nombre del grupo que estoy viendo (Satisfacción no se puede)
+function renombrarGrupo() {
+  const grupo = grupos.find(g => g.id === grupoActual);
+  if (grupo.id === GRUPO_PRINCIPAL.id) return;
+  const nombre = (prompt("Nuevo nombre del grupo:", grupo.nombre) || "").trim().slice(0, 20);
+  if (nombre === "") return;
+  grupo.nombre = nombre;
+  guardarGrupos();
+  pintarPestanas();
+}
+
+// Borra un grupo junto con sus barras (preguntando antes; Satisfacción no se puede)
+function borrarGrupo(id) {
+  const grupo = grupos.find(g => g.id === id);
+  if (grupo.id === GRUPO_PRINCIPAL.id) return;
+  const barras = actividades.filter(a => a.grupo === grupo.id);
+  let pregunta = "¿Seguro que quieres borrar el grupo " + grupo.nombre + "?";
+  if (barras.length === 1) pregunta += " También se borra su barra.";
+  if (barras.length > 1) pregunta += " También se borran sus " + barras.length + " barras.";
+  if (!confirm(pregunta)) return;
+
+  for (const actividad of barras) {
+    borrarDatos(actividad.id);
+    document.getElementById("necesidad-" + actividad.id).remove();
+  }
+  actividades = actividades.filter(a => a.grupo !== grupo.id);
+  grupos = grupos.filter(g => g.id !== grupo.id);
   guardarActividades();
-
-  // Intercambia las dos tarjetas en pantalla
-  const tarjeta = document.getElementById("necesidad-" + id);
-  const tarjetaVecina = document.getElementById("necesidad-" + vecina.id);
-  if (direccion === -1) {
-    tarjetaVecina.before(tarjeta); // Me pongo antes que la vecina
-  } else {
-    tarjetaVecina.after(tarjeta);  // Me pongo después de la vecina
-  }
+  guardarGrupos();
+  actualizarPreestablecidas();
+  // Si estaba viendo el grupo que borré, vuelvo a Satisfacción; si no, me quedo donde estaba
+  mostrarGrupo(grupoActual === grupo.id ? GRUPO_PRINCIPAL.id : grupoActual);
 }
 
 // ===== FUNCIONES DE PANTALLA =====
 // Pinta UNA barra: altura y color según qué tan llena está
-// En desarrollo, además escribe el nivel y cuántas veces la he llenado
+// Si es con niveles, además escribe el nivel y cuántas veces la he llenado
 function actualizarBarra(id) {
   const relleno = document.getElementById("relleno-" + id);
   const porcentaje = calcularPorcentaje(id);
 
   relleno.style.height = porcentaje + "%";
-
-  // Emociones: rojito tirando a rosa; más fuerte cuanto más pesa
-  if (tipoDe(id) === "emociones") {
-    relleno.style.background = porcentaje > 50 ? "#e8667a" : "#f4a3b0";
-    return;
-  }
 
   if (porcentaje > 50) {
     relleno.style.background = "#22b14c";  // Verde
@@ -416,7 +645,7 @@ function actualizarBarra(id) {
     relleno.style.background = "#e03131";  // Rojo
   }
 
-  if (tipoDe(id) === "desarrollo") {
+  if (tipoDe(id) === "niveles") {
     const conteo = contarRellenos(id);
     const n = calcularNivel(conteo.total);
     const etiqueta = document.getElementById("nivel-" + id);
@@ -426,13 +655,15 @@ function actualizarBarra(id) {
   }
 }
 
-// Muestra lo que corresponde según el modo de la barra:
-// completo = botón de llenar; manual = barra arrastrable con su pista
-function aplicarModo(id) {
-  const manual = leerModo(id) === "manual";
-  document.getElementById("barra-" + id).classList.toggle("manual", manual);
-  document.getElementById("boton-" + id).hidden = manual;
-  document.getElementById("pista-" + id).hidden = !manual;
+// Muestra lo que corresponde según el tipo de la barra:
+// clic = botón de llenar; arrastre = barra arrastrable con su pista; niveles = botón, nivel y conteo
+function aplicarTipo(id) {
+  const tipo = tipoDe(id);
+  document.getElementById("barra-" + id).classList.toggle("manual", tipo === "arrastre");
+  document.getElementById("boton-" + id).hidden = tipo === "arrastre";
+  document.getElementById("pista-" + id).hidden = tipo !== "arrastre";
+  document.getElementById("nivel-" + id).hidden = tipo !== "niveles";
+  document.getElementById("conteo-" + id).hidden = tipo !== "niveles";
 }
 
 // Pinta TODAS las barras
@@ -440,6 +671,11 @@ function actualizarTodas() {
   for (const actividad of actividades) {
     actualizarBarra(actividad.id);
   }
+}
+
+// Fabrica las opciones de un selector de tipo de barra
+function opcionesDeTipo() {
+  return Object.entries(TIPOS).map(([valor, texto]) => `<option value="${valor}">${texto}</option>`).join("");
 }
 
 // Fabrica el HTML de una barra y la mete en el panel
@@ -460,21 +696,16 @@ function crearBarra(actividad) {
       <div id="opciones-${actividad.id}" hidden>
         <button id="deshacer-${actividad.id}">Deshacer</button>
         <button id="ajustes-${actividad.id}">⚙️ Ajustes</button>
-        <button id="subir-${actividad.id}">⬆️ Subir</button>
-        <button id="bajar-${actividad.id}">⬇️ Bajar</button>
       </div>
       <div class="ajustes" id="caja-${actividad.id}" hidden>
-        <small id="etiqueta-tiempo-${actividad.id}">Se vacía en:</small>
+        <small>Se vacía en:</small>
         <input type="number" id="cantidad-${actividad.id}" min="1">
         <select id="unidad-${actividad.id}">
           <option value="horas">Horas</option>
           <option value="dias">Días</option>
         </select>
-        <small>Se llena:</small>
-        <select id="modo-${actividad.id}">
-          <option value="completo">Con un clic</option>
-          <option value="manual">Arrastrando</option>
-        </select>
+        <small>Tipo de barra:</small>
+        <select id="tipo-${actividad.id}">${opcionesDeTipo()}</select>
         <button id="guardar-${actividad.id}">Guardar</button>
         <button class="boton-quitar" id="quitar-${actividad.id}">🗑️ Quitar barra</button>
       </div>
@@ -491,7 +722,7 @@ function crearBarra(actividad) {
     quitarActividad(actividad.id);
   };
 
-  // Conecta el botón de recargar (en desarrollo también cuenta el relleno)
+  // Conecta el botón de recargar (si es con niveles, también cuenta el relleno)
   document.getElementById("boton-" + actividad.id).onclick = function () {
     recargar(actividad.id);
   };
@@ -508,14 +739,6 @@ function crearBarra(actividad) {
     document.getElementById("opciones-" + actividad.id).hidden = true; // Cierra el menú
   };
 
-  // Conecta los botones de mover (el menú se queda abierto para mover varias veces)
-  document.getElementById("subir-" + actividad.id).onclick = function () {
-    moverActividad(actividad.id, -1);
-  };
-  document.getElementById("bajar-" + actividad.id).onclick = function () {
-    moverActividad(actividad.id, 1);
-  };
-
   // Conecta el botón ⋮ de la esquina
   document.getElementById("menu-" + actividad.id).onclick = function () {
     const opciones = document.getElementById("opciones-" + actividad.id);
@@ -527,48 +750,68 @@ function crearBarra(actividad) {
     opciones.hidden = !opciones.hidden; // Si no, abre o cierra el menú
   };
 
-  // Conecta el botón de guardar los ajustes (duración y modo de llenado)
+  // Conecta el botón de guardar los ajustes (duración y tipo)
   document.getElementById("guardar-" + actividad.id).onclick = function () {
     const cantidad = Number(document.getElementById("cantidad-" + actividad.id).value);
     const unidad = document.getElementById("unidad-" + actividad.id).value;
-    const modo = document.getElementById("modo-" + actividad.id).value;
+    const tipo = document.getElementById("tipo-" + actividad.id).value;
     if (cantidad <= 0) return; // No deja guardar cero ni números negativos
     guardarDuracion(actividad.id, cantidad, unidad);
-    guardarModo(actividad.id, modo);
+    guardarTipo(actividad.id, tipo);
     document.getElementById("caja-" + actividad.id).hidden = true;
   };
 
-  // Conecta el arrastre y muestra la barra según su modo
+  // Conecta el arrastre de la barra, el de mover la tarjeta, y la muestra según su tipo
   conectarArrastre(actividad.id);
-  aplicarModo(actividad.id);
+  conectarMover(actividad.id);
+  aplicarTipo(actividad.id);
 
-  // En desarrollo: se ven el nivel y el conteo de rellenos
-  const esDesarrollo = tipoDe(actividad.id) === "desarrollo";
-  document.getElementById("nivel-" + actividad.id).hidden = !esDesarrollo;
-  document.getElementById("conteo-" + actividad.id).hidden = !esDesarrollo;
-
-  // En emociones: tarjeta en tonos rosados y "se pasa" en vez de "se vacía"
-  if (tipoDe(actividad.id) === "emociones") {
-    document.getElementById("necesidad-" + actividad.id).classList.add("emocion");
-    document.getElementById("etiqueta-tiempo-" + actividad.id).textContent = "Se pasa en:";
-  }
-
-  // Si no es de la pestaña que estoy viendo, la escondo
-  document.getElementById("necesidad-" + actividad.id).hidden = tipoDe(actividad.id) !== pestanaActual;
+  // Si no es del grupo que estoy viendo, la escondo
+  document.getElementById("necesidad-" + actividad.id).hidden = actividad.grupo !== grupoActual;
 }
 
-// Muestra solo las barras de una pestaña y pinta el botón de esa pestaña
-function mostrarPestana(tipo) {
-  pestanaActual = tipo;
+// Fabrica un botón de pestaña por cada grupo, más el "+" para crear uno nuevo
+// Las pestañas (menos Satisfacción) se pueden llevar a la papelera para borrar el grupo
+function pintarPestanas() {
+  const contenedor = document.getElementById("pestanas");
+  contenedor.innerHTML = "";
+  for (const grupo of grupos) {
+    const boton = document.createElement("button");
+    boton.className = "pestana";
+    boton.classList.toggle("activa", grupo.id === grupoActual);
+    boton.textContent = grupo.nombre;
+    boton.onclick = function () {
+      mostrarGrupo(grupo.id);
+    };
+    if (grupo.id !== GRUPO_PRINCIPAL.id) {
+      hacerDespegable(boton, {
+        alBorrar: function () {
+          borrarGrupo(grupo.id);
+        },
+      });
+    }
+    contenedor.append(boton);
+  }
+  const nuevo = document.createElement("button");
+  nuevo.className = "pestana pestana-nueva";
+  nuevo.textContent = "+";
+  nuevo.setAttribute("aria-label", "Nuevo grupo");
+  nuevo.onclick = crearGrupo;
+  contenedor.append(nuevo);
+}
+
+// Muestra solo las barras de un grupo y pinta su pestaña
+function mostrarGrupo(id) {
+  grupoActual = id;
   for (const actividad of actividades) {
-    document.getElementById("necesidad-" + actividad.id).hidden = tipoDe(actividad.id) !== tipo;
+    document.getElementById("necesidad-" + actividad.id).hidden = actividad.grupo !== id;
   }
-  // Pinta solo el botón de la pestaña que estoy viendo
-  for (const pestana of PESTANAS) {
-    document.getElementById("pestana-" + pestana).classList.toggle("activa", pestana === tipo);
-  }
-  // Las preestablecidas solo salen en la pestaña de emociones
-  document.getElementById("preestablecidas").hidden = tipo !== "emociones";
+  pintarPestanas();
+  // Las preestablecidas solo salen en Satisfacción
+  document.getElementById("preestablecidas").hidden = id !== GRUPO_PRINCIPAL.id;
+  // Satisfacción no se puede renombrar ni borrar
+  document.getElementById("renombrar-grupo").disabled = id === GRUPO_PRINCIPAL.id;
+  document.getElementById("borrar-grupo").disabled = id === GRUPO_PRINCIPAL.id;
 }
 
 // ===== MUDANZA DE DATOS VIEJOS =====
@@ -587,19 +830,48 @@ for (const actividad of actividades) {
   localStorage.removeItem(actividad.id + "-puntosAnterior");
 }
 
-// ===== BARRAS DE DESARROLLO POR DEFECTO PARA QUIEN YA USABA LA APP =====
-// Quien abre la app por primera vez ya las recibe en la lista inicial.
-// Quien ya tenía su lista guardada las recibe una sola vez aquí,
-// saltando las que ya tenga con el mismo nombre (para no duplicar).
-if (localStorage.getItem("desarrolloPorDefecto") === null) {
-  const nombres = actividades.map(a => a.nombre.toLowerCase());
-  for (const inicial of ACTIVIDADES_INICIALES) {
-    if (inicial.tipo === "desarrollo" && !nombres.includes(inicial.nombre.toLowerCase())) {
-      actividades.push({ ...inicial, id: inicial.id + Date.now() }); // Id nuevo para no chocar
+// ===== LIMPIEZA: SE QUITÓ LA PESTAÑA EMOCIONES =====
+// Si alguien tenía barras de emociones, las borra junto con sus datos.
+// Solo hace algo la primera vez; después ya no quedan.
+if (actividades.some(a => a.tipo === "emociones")) {
+  for (const actividad of actividades) {
+    if (actividad.tipo === "emociones") borrarDatos(actividad.id);
+  }
+  actividades = actividades.filter(a => a.tipo !== "emociones");
+  guardarActividades();
+}
+
+// ===== MUDANZA: DE PESTAÑAS FIJAS A GRUPOS Y TIPOS =====
+// Antes "tipo" decía la pestaña (satisfaccion o desarrollo) y el modo de llenado se guardaba aparte.
+// Ahora "grupo" dice la pestaña y "tipo" dice cómo se llena.
+// Las de Desarrollo pasan a un grupo Desarrollo y quedan de tipo "con niveles".
+// Solo hace algo la primera vez; después ya todas tienen grupo.
+if (actividades.some(a => !a.grupo)) {
+  for (const actividad of actividades) {
+    if (actividad.grupo) continue;
+    if (actividad.tipo === "desarrollo") {
+      actividad.grupo = "desarrollo";
+      actividad.tipo = "niveles";
+    } else {
+      actividad.grupo = GRUPO_PRINCIPAL.id;
+      actividad.tipo = localStorage.getItem(actividad.id + "-modo") === "manual" ? "arrastre" : "clic";
     }
+    localStorage.removeItem(actividad.id + "-modo");
+  }
+  if (actividades.some(a => a.grupo === "desarrollo") && !grupos.some(g => g.id === "desarrollo")) {
+    grupos.push({ id: "desarrollo", nombre: "Desarrollo" });
+    guardarGrupos();
   }
   guardarActividades();
-  localStorage.setItem("desarrolloPorDefecto", "si"); // Ya no lo vuelve a hacer
+}
+
+// Por si acaso: Satisfacción siempre existe, y una barra sin grupo conocido se va a Satisfacción
+if (!grupos.some(g => g.id === GRUPO_PRINCIPAL.id)) {
+  grupos.unshift(GRUPO_PRINCIPAL);
+  guardarGrupos();
+}
+for (const actividad of actividades) {
+  if (!grupos.some(g => g.id === actividad.grupo)) actividad.grupo = GRUPO_PRINCIPAL.id;
 }
 
 // ===== ARRANQUE =====
@@ -607,6 +879,14 @@ if (localStorage.getItem("desarrolloPorDefecto") === null) {
 for (const actividad of actividades) {
   crearBarra(actividad);
 }
+
+// Llena el selector de tipo de la tarjeta "Nueva barra"
+// y esconde el texto del botón si es de arrastre (esas no tienen botón)
+const selectorNuevoTipo = document.getElementById("nuevo-tipo");
+selectorNuevoTipo.innerHTML = opcionesDeTipo();
+selectorNuevoTipo.onchange = function () {
+  document.getElementById("campo-boton").hidden = selectorNuevoTipo.value === "arrastre";
+};
 
 // Conecta el botón que abre la cajita de "Nueva barra"
 document.getElementById("abrir-agregar").onclick = function () {
@@ -619,30 +899,124 @@ document.getElementById("confirmar-agregar").onclick = function () {
   const nombre = document.getElementById("nuevo-nombre").value.trim();
   const boton = document.getElementById("nuevo-boton").value.trim();
   if (nombre === "") return; // No deja crear una barra sin nombre
-  agregarActividad(nombre, boton);
+  agregarActividad(nombre, boton, selectorNuevoTipo.value);
   document.getElementById("nuevo-nombre").value = "";
   document.getElementById("nuevo-boton").value = "";
   document.getElementById("caja-agregar").hidden = true;
 };
 
-// Conecta los botones de las pestañas
-for (const pestana of PESTANAS) {
-  document.getElementById("pestana-" + pestana).onclick = function () {
-    mostrarPestana(pestana);
-  };
-}
-
-// Fabrica un botoncito por cada emoción preestablecida: un toque y queda agregada
-for (const nombre of PREESTABLECIDAS) {
+// Fabrica un botoncito por cada barra preestablecida: un toque y queda agregada
+for (const preestablecida of PREESTABLECIDAS) {
   const boton = document.createElement("button");
-  boton.textContent = nombre;
+  boton.textContent = preestablecida.nombre;
   boton.onclick = function () {
-    agregarActividad(nombre, "");
+    agregarActividad(preestablecida.nombre, preestablecida.boton, preestablecida.tipo);
     document.getElementById("caja-agregar").hidden = true;
   };
   document.getElementById("chips").append(boton);
 }
 actualizarPreestablecidas();
 
+// ===== MENÚ ☰ Y RESPALDO =====
+// Abre o cierra el menú de la esquina
+document.getElementById("boton-menu-principal").onclick = function () {
+  const menu = document.getElementById("menu-principal");
+  menu.hidden = !menu.hidden;
+};
+
+// Si toco cualquier otra parte de la página, el menú se cierra
+document.addEventListener("click", function (evento) {
+  const menu = document.getElementById("menu-principal");
+  const boton = document.getElementById("boton-menu-principal");
+  if (!menu.contains(evento.target) && evento.target !== boton) menu.hidden = true;
+});
+
+// Conecta los botones del menú para renombrar y borrar el grupo que estoy viendo
+document.getElementById("renombrar-grupo").onclick = function () {
+  document.getElementById("menu-principal").hidden = true;
+  renombrarGrupo();
+};
+document.getElementById("borrar-grupo").onclick = function () {
+  document.getElementById("menu-principal").hidden = true;
+  borrarGrupo(grupoActual);
+};
+
+// Dice si un dato de la libreta es de esta app
+// (en mao-oss77.github.io todas mis páginas comparten la misma libreta,
+//  así que solo tomo lo que es de las barras)
+function esDatoDeLaApp(clave) {
+  if (clave === "actividades" || clave === "grupos" || clave === "desarrolloPorDefecto") return true;
+  return actividades.some(a => clave.startsWith(a.id + "-"));
+}
+
+// Descarga un archivo con todos los datos de las barras
+function exportarRespaldo() {
+  const datos = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const clave = localStorage.key(i);
+    if (esDatoDeLaApp(clave)) datos[clave] = localStorage.getItem(clave);
+  }
+  // La marca "app" sirve para reconocer el archivo al cargarlo
+  const respaldo = { app: "barras", version: 1, fecha: new Date().toISOString(), datos: datos };
+
+  // Convierte el respaldo en un archivo y lo descarga con un enlace invisible
+  const archivo = new Blob([JSON.stringify(respaldo)], { type: "application/json" });
+  const enlace = document.createElement("a");
+  enlace.href = URL.createObjectURL(archivo);
+  enlace.download = "respaldo-barras-" + new Date().toISOString().slice(0, 10) + ".json";
+  enlace.click();
+  setTimeout(function () { URL.revokeObjectURL(enlace.href); }, 1000); // Limpia después
+}
+
+// Lee el archivo escogido y deja la app como estaba en ese respaldo
+// (los respaldos viejos, sin grupos, se mudan solos al recargar)
+function importarRespaldo(archivo) {
+  const lector = new FileReader();
+  lector.onload = function () {
+    let respaldo = null;
+    try {
+      respaldo = JSON.parse(lector.result);
+    } catch (error) {
+      // No era un archivo de texto válido: respaldo se queda en null
+    }
+    if (!respaldo || respaldo.app !== "barras" || !respaldo.datos) {
+      alert("Ese archivo no es un respaldo de las barras.");
+      return;
+    }
+    const fecha = new Date(respaldo.fecha).toLocaleDateString();
+    if (!confirm("¿Cargar el respaldo del " + fecha + "? Se reemplazan las barras que tienes ahora.")) return;
+
+    // Primero anoto las claves (si borro mientras recorro, se corren los puestos)
+    const claves = [];
+    for (let i = 0; i < localStorage.length; i++) claves.push(localStorage.key(i));
+    // Borro los datos actuales de las barras...
+    for (const clave of claves) {
+      if (esDatoDeLaApp(clave)) localStorage.removeItem(clave);
+    }
+    // ...y escribo los del respaldo
+    for (const clave in respaldo.datos) {
+      localStorage.setItem(clave, respaldo.datos[clave]);
+    }
+    location.reload(); // Vuelve a abrir la app con los datos nuevos
+  };
+  lector.readAsText(archivo);
+}
+
+// Conecta los botones del menú
+document.getElementById("exportar").onclick = function () {
+  exportarRespaldo();
+  document.getElementById("menu-principal").hidden = true;
+};
+document.getElementById("importar").onclick = function () {
+  document.getElementById("archivo-respaldo").click(); // Abre el selector de archivos
+};
+document.getElementById("archivo-respaldo").onchange = function () {
+  const archivo = this.files[0];
+  if (archivo) importarRespaldo(archivo);
+  this.value = ""; // Para poder escoger el mismo archivo otra vez si hace falta
+  document.getElementById("menu-principal").hidden = true;
+};
+
+mostrarGrupo(GRUPO_PRINCIPAL.id);   // Arranca en Satisfacción
 actualizarTodas();                  // Las pinta al abrir
 setInterval(actualizarTodas, 1000); // Y las repinta cada segundo

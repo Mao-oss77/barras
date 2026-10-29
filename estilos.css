@@ -8,6 +8,54 @@ h1 {
   text-align: center; /* Centrado */
   color: #22b14c;     /* Verde */
   font-size: 28px;
+  padding: 0 48px;    /* Espacio a los lados para que no choque con el botón ☰ */
+}
+
+/* ===== BOTÓN ☰ DE LA ESQUINA ===== */
+#boton-menu-principal {
+  position: absolute;   /* Se sale del orden normal y se ubica donde yo diga */
+  top: 12px;
+  right: 12px;
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: none;
+  font-size: 26px;
+  color: #22b14c;
+  cursor: pointer;
+}
+
+/* ===== MENÚ QUE SE ABRE CON ☰ ===== */
+#menu-principal {
+  position: absolute;
+  top: 56px;
+  right: 12px;
+  z-index: 10;          /* Que quede por encima de las barras */
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); /* Sombrita para que parezca flotando */
+  padding: 6px;
+  min-width: 200px;
+}
+
+#menu-principal button {
+  display: block;       /* Uno debajo del otro */
+  width: 100%;
+  text-align: left;
+  padding: 10px;
+  margin: 2px 0;
+  border: none;
+  background: none;
+  font-size: 15px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+/* Los botones que no se pueden usar ahora se ven apagados */
+#menu-principal button:disabled {
+  color: #aaa;
+  cursor: default;
 }
 
 
@@ -150,16 +198,16 @@ h1 {
 /* ===== PESTAÑAS DE ARRIBA ===== */
 #pestanas {
   display: flex;            /* Una al lado de la otra */
+  flex-wrap: wrap;          /* Si son muchos grupos, bajan al siguiente renglón */
   justify-content: center;  /* Centradas */
   gap: 8px;
   margin: 0 12px;
 }
 
 .pestana {
-  flex: 1;                     /* Las tres del mismo ancho */
   min-width: 0;                /* Que puedan encogerse en el celular */
   max-width: 180px;
-  padding: 10px 4px;           /* Poco espacio a los lados para que quepan las tres */
+  padding: 10px 16px;
   font-size: 15px;
   border: 2px solid #22b14c;   /* Borde verde */
   border-radius: 20px;         /* Forma de píldora */
@@ -174,23 +222,141 @@ h1 {
   color: white;
 }
 
-/* ===== PESTAÑA DE EMOCIONES (EN ROSADO) ===== */
-#pestana-emociones {
-  border-color: #e8667a;
-  color: #e8667a;
+/* El "+" para crear un grupo nuevo: punteado, como la tarjeta de agregar */
+.pestana-nueva {
+  border-style: dashed;
+  font-weight: bold;
 }
 
-#pestana-emociones.activa {
-  background: #e8667a;
+/* Que al mantener hundida una pestaña no se seleccione el texto */
+.pestana {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* ===== TARJETA O PESTAÑA DESPEGADA (LLEVÁNDOLA A OTRO LADO) ===== */
+/* Flota por encima de todo con sombra; la posición la pone JavaScript */
+.levantada {
+  position: relative;
+  z-index: 20;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  cursor: grabbing;
+}
+.necesidad.levantada {
+  background: white;
+}
+
+/* ===== VENTANA DE INICIAR SESIÓN ===== */
+/* Fondo oscuro que tapa la app, con la cajita blanca en el centro */
+#ventana-sesion {
+  position: fixed;
+  inset: 0;                 /* Ocupa toda la pantalla */
+  z-index: 30;              /* Encima de todo */
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;      /* Cajita centrada de arriba a abajo... */
+  justify-content: center;  /* ...y de lado a lado */
+  padding: 16px;
+}
+
+.ventana {
+  position: relative;
+  width: 100%;
+  max-width: 340px;
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  text-align: center;
+}
+
+.ventana h2 {
+  margin-top: 0;
+  color: #22b14c;
+}
+
+.ventana input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px;
+  margin: 6px 0;
+  font-size: 16px;          /* Con 16px o más, el iPhone no hace zoom al escribir */
+}
+
+.ventana button {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  margin: 6px 0;
+  font-size: 15px;
+}
+
+/* "Usar otro correo": botón que parece un enlace */
+.ventana .boton-texto {
+  border: none;
+  background: none;
+  color: #555;
+  text-decoration: underline;
+}
+
+/* La ✕ de la esquina */
+.ventana .cerrar-ventana {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: auto;
+  margin: 0;
+  border: none;
+  background: none;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.ventana small,
+#mensaje-sesion {
+  display: block;
+  color: #555;
+  font-size: 14px;
+}
+
+/* ===== PAPELERA (SALE ABAJO MIENTRAS LLEVO ALGO) ===== */
+#papelera {
+  position: fixed;          /* Quieta en la pantalla aunque la página se deslice */
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 15;              /* Encima de las barras, debajo de lo que llevo */
+  padding: 18px 28px;
+  border: 3px dashed #e03131;
+  border-radius: 20px;
+  background: white;
+  color: #e03131;
+  font-size: 16px;
+  font-weight: bold;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: transform 0.15s, background 0.15s;
+}
+
+/* Con el dedo encima: se pinta de rojo y se agranda, para que se note que va a borrar */
+#papelera.encima {
+  background: #e03131;
   color: white;
+  transform: translateX(-50%) scale(1.1);
 }
 
-/* ===== TARJETAS DE EMOCIONES ===== */
-.necesidad.emocion p {
-  color: #e8667a;  /* Nombre en rojito rosado en vez de verde */
+/* Que al mantener hundido no se seleccione el texto ni salga el menú del iPhone */
+.necesidad {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+.necesidad input {
+  user-select: text;
+  -webkit-user-select: text;
 }
 
-/* ===== EMOCIONES PREESTABLECIDAS (BOTONCITOS DE UN TOQUE) ===== */
+/* ===== BARRAS PREESTABLECIDAS (BOTONCITOS DE UN TOQUE) ===== */
 #chips {
   display: flex;
   flex-wrap: wrap;          /* Si no caben, bajan al siguiente renglón */
@@ -204,10 +370,10 @@ h1 {
   margin: 0;
   padding: 4px 8px;
   font-size: 13px;
-  border: 1px solid #e8667a;
+  border: 1px solid #22b14c;
   border-radius: 12px;      /* Forma de píldora */
   background: white;
-  color: #e8667a;
+  color: #22b14c;
   cursor: pointer;
 }
 
