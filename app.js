@@ -105,6 +105,10 @@ function guardarActividades() {
   localStorage.setItem("actividades", JSON.stringify(actividades));
 }
 
+// Si nunca ha guardado barras, es alguien que abre la app por primera vez
+// (lo usa recorrido.js para ofrecer el recorrido de bienvenida)
+const esPrimeraVez = localStorage.getItem("actividades") === null;
+
 // La lista con la que trabaja la app mientras está abierta
 let actividades = leerActividades();
 

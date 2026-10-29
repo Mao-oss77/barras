@@ -396,3 +396,91 @@ h1 {
   color: #555;
   margin: 4px 0;
 }
+
+/* ===== LISTA DE BENEFICIOS DE INICIAR SESIÓN ===== */
+.ventana .beneficios {
+  text-align: left;
+  padding-left: 0;
+  list-style: none;
+  margin: 8px 0;
+}
+.ventana .beneficios li {
+  margin: 6px 0;
+}
+
+/* ===== PREGUNTA DEL RECORRIDO (la primera vez) ===== */
+#oferta-recorrido {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+/* ===== RECORRIDO DE BIENVENIDA ===== */
+/* Capa que tapa toda la pantalla: así no se toca nada de atrás por accidente */
+#recorrido {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+}
+
+/* El hueco de luz: una cajita transparente con una sombra enorme que oscurece todo lo demás */
+#recorrido-foco {
+  position: fixed;
+  border-radius: 12px;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6);
+  transition: all 0.3s;  /* Se desliza suave de una parte a otra */
+  pointer-events: none;
+}
+
+/* El globito con la explicación */
+#recorrido-globo {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  max-width: 340px;
+  margin: 0 auto;
+  background: white;
+  border-radius: 16px;
+  padding: 16px 18px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  transition: top 0.3s;
+}
+#recorrido-globo h3 {
+  margin: 4px 0 6px;
+  color: #22b14c;
+}
+#recorrido-globo p {
+  margin: 0 0 12px;
+  line-height: 1.4;
+}
+#recorrido-cuenta {
+  color: #999;
+}
+.recorrido-botones {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.recorrido-botones .boton-texto {
+  border: none;
+  background: none;
+  color: #555;
+  text-decoration: underline;
+  font-size: 15px;
+  cursor: pointer;
+}
+#recorrido-siguiente {
+  margin-left: auto;   /* Siempre a la derecha, aunque "Saltar" no esté */
+  padding: 8px 20px;
+  border: none;
+  border-radius: 8px;
+  background: #22b14c;
+  color: white;
+  font-size: 15px;
+  cursor: pointer;
+}

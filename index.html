@@ -15,9 +15,9 @@
   <link rel="apple-touch-icon" href="iconos/icono-180.png">
   <meta name="theme-color" content="#ffffff">
   <!-- Conecta el archivo de estilos (colores, tamaños, posiciones) -->
-  <!-- El "?v=" es la versión: cada vez que cambie estilos.css, app.js o nube.js, hay que subir ese número
-       (en los tres a la vez). Así el celular sabe que tiene que pedirlos de nuevo y no mezcla viejos con nuevos. -->
-  <link rel="stylesheet" href="estilos.css?v=4">
+  <!-- El "?v=" es la versión: cada vez que cambie estilos.css, app.js, nube.js o recorrido.js, hay que subir ese número
+       (en todos a la vez). Así el celular sabe que tiene que pedirlos de nuevo y no mezcla viejos con nuevos. -->
+  <link rel="stylesheet" href="estilos.css?v=5">
 </head>
 
 <!-- ===== CUERPO: todo lo que SÍ se ve en la página ===== -->
@@ -34,6 +34,7 @@
     <button id="borrar-grupo">🗑️ Borrar este grupo</button>
     <!-- Dice "Iniciar sesión" o "Cerrar sesión" según el caso (lo pone nube.js) -->
     <button id="boton-sesion">👤 Iniciar sesión</button>
+    <button id="ver-recorrido">🧭 Ver recorrido</button>
     <!-- Solo aparece cuando el navegador deja instalar la app -->
     <button id="instalar-app" hidden>📲 Instalar app</button>
     <!-- Selector de archivos escondido: lo abre el botón "Cargar respaldo" -->
@@ -83,7 +84,13 @@
 
       <!-- Paso 1: escribir el correo -->
       <div id="paso-correo">
-        <p>Escribe tu correo y te enviamos un enlace para entrar. Así tus barras quedan guardadas en la nube.</p>
+        <p>Todo funciona sin iniciar sesión, pero tus barras solo quedan en este celular. Si inicias sesión:</p>
+        <ul class="beneficios">
+          <li>☁️ Se guardan en la nube.</li>
+          <li>📱 No las pierdes si cambias de celular o se borran los datos.</li>
+          <li>🔄 Las ves en todos tus dispositivos.</li>
+        </ul>
+        <p>Escribe tu correo y te enviamos un enlace para entrar.</p>
         <input type="email" id="correo" placeholder="tucorreo@ejemplo.com" autocomplete="email">
         <button id="enviar-enlace">Enviar enlace</button>
       </div>
@@ -107,9 +114,35 @@
     </div>
   </div>
 
+  <!-- Pregunta la primera vez que se abre la app: ¿quiere el recorrido? -->
+  <div id="oferta-recorrido" hidden>
+    <div class="ventana">
+      <h2>¡Hola! 💚</h2>
+      <p>¿Quieres que te muestre cómo funciona? Son unos pocos pasos.</p>
+      <button id="oferta-si">Sí, muéstrame</button>
+      <button class="boton-texto" id="oferta-no">Ahora no</button>
+      <small>Lo puedes ver cuando quieras en el menú ☰.</small>
+    </div>
+  </div>
+
+  <!-- Recorrido: pantalla oscura con un hueco de luz (el foco) y un globito con la explicación -->
+  <div id="recorrido" hidden>
+    <div id="recorrido-foco"></div>
+    <div id="recorrido-globo">
+      <small id="recorrido-cuenta"></small>
+      <h3 id="recorrido-titulo"></h3>
+      <p id="recorrido-texto"></p>
+      <div class="recorrido-botones">
+        <button class="boton-texto" id="recorrido-saltar">Saltar</button>
+        <button id="recorrido-siguiente">Siguiente</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Conecta JavaScript: la librería de Supabase (la nube), la app, y la parte de la nube -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
-  <script src="app.js?v=4"></script>
-  <script src="nube.js?v=4"></script>
+  <script src="app.js?v=5"></script>
+  <script src="nube.js?v=5"></script>
+  <script src="recorrido.js?v=5"></script>
 </body>
 </html>
