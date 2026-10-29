@@ -409,6 +409,7 @@ function hacerDespegable(elemento, acciones) {
   let moviendo = false;     // ¿Ya se despegó?
   let recienMovido = false; // Para que soltarlo no cuente también como un clic
   let temporizador = null;  // El reloj que cuenta el medio segundo
+  let dedo = null;          // Cuál dedo (o mouse) lo agarró
   let inicioX = 0, inicioY = 0; // Dónde puse el dedo
   let ultimoX = 0, ultimoY = 0; // Dónde está el dedo ahora
   let agarreX = 0, agarreY = 0; // Dónde lo agarré, medido desde su esquina
@@ -449,6 +450,9 @@ function hacerDespegable(elemento, acciones) {
     apretado = false;
     clearTimeout(temporizador);
     temporizador = null;
+    window.removeEventListener("pointermove", alMoverDedo);
+    window.removeEventListener("pointerup", alSoltarDedo);
+    window.removeEventListener("pointercancel", alSoltarDedo);
     if (!moviendo) return;
     moviendo = false;
     recienMovido = true;
@@ -462,17 +466,28 @@ function hacerDespegable(elemento, acciones) {
     if (enPapelera) acciones.alBorrar();
   }
 
+  // Mientras el dedo está hundido, lo escucho en TODA la página y no solo encima del elemento:
+  // al cambiarlo de puesto el navegador lo "suelta", y si muevo rápido el dedo se le escapa
+  // (antes eso hacía que se quedara atascado a medio camino).
   elemento.addEventListener("pointerdown", function (evento) {
     if (acciones.sePuedeAgarrar && !acciones.sePuedeAgarrar(evento.target)) return;
     apretado = true;
+    dedo = evento.pointerId;
     inicioX = ultimoX = evento.clientX;
     inicioY = ultimoY = evento.clientY;
-    elemento.setPointerCapture(evento.pointerId); // Que siga recibiendo el dedo aunque se salga
+    window.addEventListener("pointermove", alMoverDedo);
+    window.addEventListener("pointerup", alSoltarDedo);
+    window.addEventListener("pointercancel", alSoltarDedo);
     if (evento.pointerType !== "mouse") temporizador = setTimeout(empezar, ESPERA_MOVER);
   });
 
-  elemento.addEventListener("pointermove", function (evento) {
-    if (!apretado) return;
+  // Solo hago caso al dedo que lo agarró (por si hay otro dedo tocando la pantalla)
+  function alSoltarDedo(evento) {
+    if (evento.pointerId === dedo) terminar();
+  }
+
+  function alMoverDedo(evento) {
+    if (!apretado || evento.pointerId !== dedo) return;
     ultimoX = evento.clientX;
     ultimoY = evento.clientY;
     const distancia = Math.hypot(ultimoX - inicioX, ultimoY - inicioY);
@@ -487,10 +502,7 @@ function hacerDespegable(elemento, acciones) {
       clearTimeout(temporizador);  // Celular: se movió antes de tiempo, quería deslizar
       temporizador = null;
     }
-  });
-
-  elemento.addEventListener("pointerup", terminar);
-  elemento.addEventListener("pointercancel", terminar);
+  }
 
   // Soltarlo no cuenta como clic (si no, al soltar una pestaña se abriría ese grupo)
   elemento.addEventListener("click", function (evento) {
@@ -771,7 +783,8 @@ function crearBarra(actividad) {
 }
 
 // Fabrica un botón de pestaña por cada grupo, más el "+" para crear uno nuevo
-// Las pestañas (menos Satisfacción) se pueden llevar a la papelera para borrar el grupo
+// Las pestañas (menos Satisfacción) se pueden arrastrar para cambiarlas de puesto,
+// o llevar a la papelera para borrar el grupo. Satisfacción siempre se queda de primera.
 function pintarPestanas() {
   const contenedor = document.getElementById("pestanas");
   contenedor.innerHTML = "";
@@ -780,11 +793,33 @@ function pintarPestanas() {
     boton.className = "pestana";
     boton.classList.toggle("activa", grupo.id === grupoActual);
     boton.textContent = grupo.nombre;
+    boton.dataset.grupo = grupo.id; // Para saber de qué grupo es al reordenar
     boton.onclick = function () {
       mostrarGrupo(grupo.id);
     };
     if (grupo.id !== GRUPO_PRINCIPAL.id) {
       hacerDespegable(boton, {
+        // Si el dedo pasó la mitad de otra pestaña (que no sea Satisfacción ni el "+"), me cambio con ella.
+        // Lo de "la mitad" evita que tiemble cuando las pestañas son de distinto ancho.
+        alMover: function (x, y) {
+          const otra = document.elementsFromPoint(x, y)
+            .map(elemento => elemento.closest(".pestana"))
+            .find(p => p && p !== boton && p.dataset.grupo && p.dataset.grupo !== GRUPO_PRINCIPAL.id);
+          if (!otra) return;
+          const caja = otra.getBoundingClientRect();
+          const mitad = caja.left + caja.width / 2;
+          if (boton.compareDocumentPosition(otra) & Node.DOCUMENT_POSITION_FOLLOWING) {
+            if (x > mitad) otra.after(boton);  // La otra estaba después: me pongo detrás de ella
+          } else if (x < mitad) {
+            otra.before(boton);                // La otra estaba antes: me pongo delante de ella
+          }
+        },
+        // Guardo el orden de los grupos como quedó en pantalla
+        alSoltar: function () {
+          const orden = [...document.querySelectorAll("#pestanas .pestana")].map(p => p.dataset.grupo);
+          grupos.sort((a, b) => orden.indexOf(a.id) - orden.indexOf(b.id));
+          guardarGrupos();
+        },
         alBorrar: function () {
           borrarGrupo(grupo.id);
         },
