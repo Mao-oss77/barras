@@ -1052,6 +1052,33 @@ document.getElementById("archivo-respaldo").onchange = function () {
   document.getElementById("menu-principal").hidden = true;
 };
 
+// ===== APP INSTALABLE =====
+// Enciende el ayudante que deja abrir la app sin internet (sw.js)
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("sw.js").catch(function () {
+    // Si no se pudo, la app sigue funcionando igual, solo que no abre sin internet
+  });
+}
+
+// El navegador avisa cuando se puede instalar: guardo ese aviso y muestro el botón del menú
+let avisoInstalar = null;
+window.addEventListener("beforeinstallprompt", function (evento) {
+  evento.preventDefault(); // Que no salga su cartelito solo; lo saco yo cuando toque el botón
+  avisoInstalar = evento;
+  document.getElementById("instalar-app").hidden = false;
+});
+document.getElementById("instalar-app").onclick = function () {
+  document.getElementById("menu-principal").hidden = true;
+  if (!avisoInstalar) return;
+  avisoInstalar.prompt();  // Sale la pregunta del navegador: "¿Instalar?"
+  avisoInstalar = null;    // Solo sirve una vez
+  this.hidden = true;
+};
+// Ya quedó instalada: el botón sobra
+window.addEventListener("appinstalled", function () {
+  document.getElementById("instalar-app").hidden = true;
+});
+
 mostrarGrupo(GRUPO_PRINCIPAL.id);   // Arranca en Satisfacción
 actualizarTodas();                  // Las pinta al abrir
 setInterval(actualizarTodas, 1000); // Y las repinta cada segundo

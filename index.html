@@ -9,10 +9,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <!-- Nombre que sale en la pestaña del navegador -->
   <title>Nivel de satisfacción</title>
+  <!-- Para que se pueda instalar como app: nombre, ícono y colores (ver manifest.json) -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="iconos/icono-192.png">
+  <link rel="apple-touch-icon" href="iconos/icono-180.png">
+  <meta name="theme-color" content="#ffffff">
   <!-- Conecta el archivo de estilos (colores, tamaños, posiciones) -->
   <!-- El "?v=" es la versión: cada vez que cambie estilos.css, app.js o nube.js, hay que subir ese número
        (en los tres a la vez). Así el celular sabe que tiene que pedirlos de nuevo y no mezcla viejos con nuevos. -->
-  <link rel="stylesheet" href="estilos.css?v=3">
+  <link rel="stylesheet" href="estilos.css?v=4">
 </head>
 
 <!-- ===== CUERPO: todo lo que SÍ se ve en la página ===== -->
@@ -29,6 +34,8 @@
     <button id="borrar-grupo">🗑️ Borrar este grupo</button>
     <!-- Dice "Iniciar sesión" o "Cerrar sesión" según el caso (lo pone nube.js) -->
     <button id="boton-sesion">👤 Iniciar sesión</button>
+    <!-- Solo aparece cuando el navegador deja instalar la app -->
+    <button id="instalar-app" hidden>📲 Instalar app</button>
     <!-- Selector de archivos escondido: lo abre el botón "Cargar respaldo" -->
     <input type="file" id="archivo-respaldo" accept=".json,application/json" hidden>
   </div>
@@ -102,7 +109,7 @@
 
   <!-- Conecta JavaScript: la librería de Supabase (la nube), la app, y la parte de la nube -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
-  <script src="app.js?v=3"></script>
-  <script src="nube.js?v=3"></script>
+  <script src="app.js?v=4"></script>
+  <script src="nube.js?v=4"></script>
 </body>
 </html>
