@@ -484,3 +484,174 @@ h1 {
   font-size: 15px;
   cursor: pointer;
 }
+
+/* ===== MI INFORME ===== */
+/* Mientras está abierto, la página de atrás no se desliza */
+body.sin-scroll {
+  overflow: hidden;
+}
+
+#informe {
+  position: fixed;
+  inset: 0;
+  z-index: 35;
+  background: white;
+  overflow-y: auto;        /* El informe se desliza por dentro */
+  padding: 0 16px 32px;
+}
+
+.informe-cabeza {
+  position: relative;
+  max-width: 560px;
+  margin: 0 auto;
+  text-align: center;
+}
+.informe-cabeza h2 {
+  color: #22b14c;
+  margin: 18px 0 12px;
+}
+.informe-cabeza .cerrar-ventana {
+  position: absolute;
+  top: 0;
+  right: 0;
+  border: none;
+  background: none;
+  font-size: 20px;
+  padding: 8px;
+  cursor: pointer;
+}
+
+/* Botones Semana / Mes */
+.informe-periodo {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.informe-periodo button {
+  padding: 8px 20px;
+  border: 2px solid #22b14c;
+  border-radius: 999px;
+  background: white;
+  color: #22b14c;
+  font-size: 15px;
+  cursor: pointer;
+}
+.informe-periodo button.elegido {
+  background: #22b14c;
+  color: white;
+}
+
+#informe-contenido {
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.informe-seccion {
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-top: 14px;
+}
+.informe-seccion h3 {
+  margin: 0 0 10px;
+  font-size: 17px;
+}
+.informe-seccion h4 {
+  margin: 12px 0 4px;
+  font-size: 14px;
+  color: #555;
+}
+
+/* Resumen de arriba: el número grande */
+.informe-resumen {
+  text-align: center;
+}
+.informe-resumen p {
+  margin: 4px 0;
+}
+.informe-numero {
+  font-size: 44px;
+  font-weight: bold;
+  color: #22b14c;
+}
+.informe-grande {
+  font-size: 18px;
+  font-weight: bold;
+}
+.informe-mejor {
+  margin-top: 10px !important;
+  color: #22b14c;
+  font-weight: bold;
+}
+
+/* Calendario: 7 columnas */
+.informe-calendario {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+.informe-letra {
+  text-align: center;
+  color: #999;
+}
+.informe-dia {
+  aspect-ratio: 1;          /* Cuadrados */
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  background: #f0f0f0;
+  color: #777;
+}
+.informe-dia small {
+  font-size: 11px;
+}
+/* Tonos de verde: mientras más hice ese día, más fuerte */
+.informe-dia[data-tono="1"] { background: #c8ecd3; color: #333; }
+.informe-dia[data-tono="2"] { background: #8fd8a5; color: #222; }
+.informe-dia[data-tono="3"] { background: #52c473; color: white; }
+.informe-dia[data-tono="4"] { background: #22b14c; color: white; }
+.informe-dia.hoy {
+  outline: 2px solid #333;
+}
+
+/* Filas con nombre, tirita y número */
+.informe-fila {
+  display: grid;
+  grid-template-columns: 90px 1fr 64px;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0;
+  font-size: 14px;
+}
+.informe-fila-simple {
+  grid-template-columns: 1fr auto;
+}
+.informe-nombre {
+  overflow: hidden;
+  text-overflow: ellipsis;   /* Si el nombre es muy largo, termina en "..." */
+  white-space: nowrap;
+}
+.informe-valor {
+  text-align: right;
+  color: #555;
+}
+.informe-tira {
+  height: 12px;
+  border-radius: 6px;
+  background: #f0f0f0;
+  overflow: hidden;
+}
+.informe-tira-relleno {
+  height: 100%;
+  background: #22b14c;
+  border-radius: 6px;
+}
+.informe-suave {
+  color: #999;
+  display: block;
+  margin-top: 6px;
+}
