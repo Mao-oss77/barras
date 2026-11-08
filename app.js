@@ -984,7 +984,8 @@ document.getElementById("boton-menu-principal").onclick = function () {
 document.addEventListener("click", function (evento) {
   const menu = document.getElementById("menu-principal");
   const boton = document.getElementById("boton-menu-principal");
-  if (!menu.contains(evento.target) && evento.target !== boton) menu.hidden = true;
+  // (uso "contains" porque el toque puede caer en el dibujito del ícono, que está dentro del botón)
+  if (!menu.contains(evento.target) && !boton.contains(evento.target)) menu.hidden = true;
 });
 
 // Conecta los botones del menú para renombrar y borrar el grupo que estoy viendo
