@@ -673,7 +673,7 @@ function actualizarBarra(id) {
     const etiqueta = document.getElementById("nivel-" + id);
     etiqueta.textContent = "Nivel " + n.nivel + " · " + n.rellenos + "/" + n.meta;
     etiqueta.style.background = COLORES_NIVEL[Math.min(n.nivel, COLORES_NIVEL.length) - 1];
-    document.getElementById("conteo-" + id).textContent = "🔁 Hoy " + conteo.hoy + " · Mes " + conteo.mes;
+    document.getElementById("conteo-" + id).textContent = "Hoy " + conteo.hoy + " · Mes " + conteo.mes;
   }
 }
 
@@ -712,12 +712,12 @@ function crearBarra(actividad) {
       <p id="nombre-${actividad.id}"></p>
       <small class="nivel" id="nivel-${actividad.id}" hidden></small>
       <small class="conteo" id="conteo-${actividad.id}" hidden></small>
-      <small class="pista" id="pista-${actividad.id}" hidden>↕ Mantén y arrastra</small>
+      <small class="pista" id="pista-${actividad.id}" hidden>${icono("arrastrar")} Mantén y arrastra</small>
       <button id="boton-${actividad.id}"></button>
-      <button class="boton-menu" id="menu-${actividad.id}" aria-label="Más opciones">⋮</button>
+      <button class="boton-menu" id="menu-${actividad.id}" aria-label="Más opciones">${icono("puntos")}</button>
       <div id="opciones-${actividad.id}" hidden>
         <button id="deshacer-${actividad.id}">Deshacer</button>
-        <button id="ajustes-${actividad.id}">⚙️ Ajustes</button>
+        <button id="ajustes-${actividad.id}">${icono("ajustes")} Ajustes</button>
       </div>
       <div class="ajustes" id="caja-${actividad.id}" hidden>
         <small>Se vacía en:</small>
@@ -729,7 +729,7 @@ function crearBarra(actividad) {
         <small>Tipo de barra:</small>
         <select id="tipo-${actividad.id}">${opcionesDeTipo()}</select>
         <button id="guardar-${actividad.id}">Guardar</button>
-        <button class="boton-quitar" id="quitar-${actividad.id}">🗑️ Quitar barra</button>
+        <button class="boton-quitar" id="quitar-${actividad.id}">${icono("borrar")} Quitar barra</button>
       </div>
     </div>
   `);

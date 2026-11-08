@@ -6,7 +6,7 @@
 const PASOS_RECORRIDO = [
   {
     buscar: () => null,
-    titulo: "¡Bienvenido! 💚",
+    titulo: "¡Bienvenido!",
     texto: "Cada barra es algo que te hace feliz. Mientras más llena, mejor estás en eso.",
   },
   {
@@ -22,7 +22,7 @@ const PASOS_RECORRIDO = [
   {
     buscar: () => document.getElementById("tarjeta-agregar"),
     titulo: "Agrega las tuyas",
-    texto: "Con el + creas tus propias barras. En el ⋮ de cada una cambias cuánto tarda en vaciarse.",
+    texto: "Con el + creas tus propias barras. En los tres puntitos de cada una cambias cuánto tarda en vaciarse.",
   },
   {
     buscar: () => primeraTarjeta(),
@@ -36,7 +36,7 @@ const PASOS_RECORRIDO = [
   },
   {
     buscar: () => document.getElementById("boton-menu-principal"),
-    titulo: "El menú ☰",
+    titulo: "El menú",
     texto: "Todo funciona sin iniciar sesión, pero tus barras solo quedan en este celular. " +
            "Si inicias sesión, se guardan en la nube: no las pierdes si cambias de celular o se borran los datos, " +
            "y las ves en todos tus dispositivos. Aquí también puedes guardar un respaldo.",
@@ -44,7 +44,7 @@ const PASOS_RECORRIDO = [
   {
     buscar: () => null,
     titulo: "¡Listo!",
-    texto: "Haz lo que te hace feliz 💚 Si quieres ver esto otra vez, está en el menú ☰.",
+    texto: "Haz lo que te hace feliz. Si quieres ver esto otra vez, está en el menú de arriba.",
   },
 ];
 

@@ -1,9 +1,10 @@
-/* ===== TEMAS DE COLOR ===== */
-/* Todos los colores de la app salen de aquí. Cada tema cambia estos valores
-   (el tema elegido lo pone tema.js en <html data-tema="...">). */
+/* ===== COLORES ===== */
+/* Todos los colores de la app salen de aquí.
+   - El color principal (--acento) lo escoge cada persona: tema.js lo pone en <html>.
+   - El modo claro u oscuro cambia el resto (tema.js pone <html data-modo="...">). */
 :root {
-  --acento: #22b14c;        /* El color principal: títulos, pestañas, barras llenas */
-  --acento-texto: white;    /* Letra encima del color principal */
+  --acento: #22b14c;        /* El color principal: títulos, pestañas, barras llenas (lo cambia tema.js) */
+  --acento-texto: white;    /* Letra encima del color principal (tema.js la pone clara u oscura según el color) */
   --fondo: white;           /* Fondo de la página */
   --superficie: white;      /* Fondo de tarjetas, menús y ventanas */
   --texto: #111;
@@ -20,17 +21,7 @@
   color-scheme: light;      /* Botones y cajas de texto del navegador en claro */
 }
 
-:root[data-tema="oceano"] {
-  --acento: #1e88e5;
-}
-
-:root[data-tema="lavanda"] {
-  --acento: #8e5cd9;
-}
-
-:root[data-tema="noche"] {
-  --acento: #3ddc84;
-  --acento-texto: #0d1f14;
+:root[data-modo="oscuro"] {
   --fondo: #121212;
   --superficie: #1e1e1e;
   --texto: #eeeeee;
@@ -469,13 +460,18 @@ h1 {
 /* La ✕ de la esquina */
 .ventana .cerrar-ventana {
   position: absolute;
-  top: 8px;
-  right: 8px;
-  width: auto;
+  top: 10px;
+  right: 10px;
+  z-index: 1;
+  width: 36px;
+  height: 36px;
+  padding: 0;
   margin: 0;
   border: none;
-  background: none;
-  font-size: 18px;
+  border-radius: 50%;
+  background: var(--vacio);
+  color: var(--texto-suave);
+  font-size: 16px;
   cursor: pointer;
 }
 
@@ -835,37 +831,62 @@ body.sin-scroll {
   padding: 16px;
 }
 
-#lista-temas {
+/* Claro / Oscuro */
+#lista-modos {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
-  margin-top: 8px;
 }
-
-.ventana #lista-temas button {
+.ventana #lista-modos button {
   margin: 0;
   padding: 12px 8px;
   border: 2px solid var(--borde);
-  border-radius: 12px;
+  border-radius: 16px;
   background: var(--superficie);
   color: var(--texto);
-  cursor: pointer;
 }
-
-/* El tema que está puesto ahora */
-.ventana #lista-temas button.elegido {
+.ventana #lista-modos button.elegido {
   border-color: var(--acento);
-  font-weight: bold;
 }
 
-/* La muestra: una barrita con el color del tema, sobre el fondo del tema */
-.muestra-tema {
-  display: block;
-  width: 34px;
-  height: 52px;
-  margin: 0 auto 6px;
-  border: 3px solid;
-  border-radius: 4px;
+/* La paleta: bolitas de color, y la de los colores del arcoíris para escoger el tuyo */
+#lista-colores {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
+  gap: 10px;
+  justify-items: center;
+}
+.ventana #lista-colores button {
+  width: 44px;
+  height: 44px;
+  margin: 0;
+  padding: 0;
+  border-radius: 50%;
+  border: 3px solid var(--superficie);
+  box-shadow: 0 0 0 2px var(--borde);
+  color: white;
+  font-size: 18px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+/* El color que está puesto: anillo de su mismo color alrededor */
+.ventana #lista-colores button.elegido {
+  box-shadow: 0 0 0 3px var(--acento);
+}
+.ventana #lista-colores .color-propio {
+  background: conic-gradient(#f44336, #ff9800, #ffeb3b, #4caf50, #00bcd4, #2196f3, #9c27b0, #f44336);
+}
+#elegir-color {
+  /* El selector de color del sistema, escondido: lo abre la bolita del arcoíris */
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* "Listo" al final de la ventana */
+.ventana #listo-temas {
+  margin-top: 18px;
 }
 
 /* ===== FONDOS ===== */
@@ -1034,3 +1055,69 @@ body::after,
   position: absolute;
   inset: 0;
 }
+
+/* ===== ÍCONOS DE LÍNEA (iconos.js) ===== */
+/* Toman el color y el tamaño de la letra que los rodea */
+.icono {
+  width: 1.2em;
+  height: 1.2em;
+  vertical-align: -0.25em;
+  flex-shrink: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* En el menú ☰: ícono a la izquierda, del color principal */
+#menu-principal button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+#menu-principal button .icono {
+  color: var(--acento);
+}
+#menu-principal button:disabled .icono {
+  color: inherit;
+}
+
+/* Botones que son solo un ícono */
+#boton-menu-principal,
+.necesidad .boton-menu,
+.cerrar-ventana {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+#boton-menu-principal .icono { width: 26px; height: 26px; }
+.necesidad .boton-menu .icono { width: 20px; height: 20px; }
+.cerrar-ventana .icono { width: 18px; height: 18px; }
+
+/* Ícono y texto juntos, centrados */
+.necesidad .ajustes button,
+.necesidad [id^="opciones-"] button,
+#papelera,
+.ventana #lista-modos button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+/* Lista de beneficios de iniciar sesión: ícono del color principal */
+.ventana .beneficios li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ventana .beneficios .icono,
+.ventana h2 .icono,
+.informe-cabeza h2 .icono {
+  color: var(--acento);
+}
+
+/* La camarita de "Tu foto" y el + / chulito de la bolita del arcoíris */
+.muestra-fondo .icono { width: 26px; height: 26px; color: var(--texto-suave); }
+.ventana #lista-colores .icono { width: 20px; height: 20px; stroke-width: 2.6; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.5)); }

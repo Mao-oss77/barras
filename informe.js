@@ -109,7 +109,7 @@ function pintarInforme() {
   // --- 1. Resumen (y la comparación, solo si fue mejor) ---
   const resumen = hacer("section", "informe-seccion informe-resumen");
   if (total === 0) {
-    resumen.append(hacer("p", "informe-grande", "Aquí vas a ver todo lo que haces 💚"));
+    resumen.append(hacer("p", "informe-grande", "Aquí vas a ver todo lo que haces"));
     resumen.append(hacer("p", "", "Cuando llenes tus barras, aparecerá en este informe."));
   } else {
     resumen.append(hacer("p", "informe-numero", String(total)));
@@ -117,8 +117,10 @@ function pintarInforme() {
       " en los " + nombrePeriodo + (diasActivos > 1 ? ", en " + diasActivos + " días distintos." : ".")));
     if (total > totalAntes && totalAntes > 0) {
       const mas = total - totalAntes;
-      resumen.append(hacer("p", "informe-mejor",
-        "🎉 " + mas + (mas === 1 ? " vez más" : " veces más") + " que en los " + dias + " días anteriores."));
+      const mejor = hacer("p", "informe-mejor");
+      mejor.innerHTML = icono("destello");
+      mejor.append(" " + mas + (mas === 1 ? " vez más" : " veces más") + " que en los " + dias + " días anteriores.");
+      resumen.append(mejor);
     }
   }
   contenido.append(resumen);

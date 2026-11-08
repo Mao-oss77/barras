@@ -15,15 +15,17 @@
   <link rel="apple-touch-icon" href="iconos/icono-180.png">
   <meta name="theme-color" content="#ffffff">
   <!-- Conecta el archivo de estilos (colores, tamaños, posiciones) -->
-  <!-- El "?v=" es la versión: cada vez que cambie estilos.css, app.js, nube.js, recorrido.js, informe.js o tema.js, hay que subir ese número
+  <!-- El "?v=" es la versión: cada vez que cambie estilos.css, app.js, nube.js, recorrido.js, informe.js, tema.js o iconos.js, hay que subir ese número
        (en todos a la vez). Así el celular sabe que tiene que pedirlos de nuevo y no mezcla viejos con nuevos. -->
   <!-- Letra Nunito (redondita y amigable), de Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800&display=swap">
-  <link rel="stylesheet" href="estilos.css?v=9">
+  <link rel="stylesheet" href="estilos.css?v=11">
+  <!-- Los íconos de línea (los demás archivos los usan) -->
+  <script src="iconos.js?v=11"></script>
   <!-- Pone el color y el fondo elegidos antes de pintar la página -->
-  <script src="tema.js?v=9"></script>
+  <script src="tema.js?v=11"></script>
 </head>
 
 <!-- ===== CUERPO: todo lo que SÍ se ve en la página ===== -->
@@ -31,22 +33,22 @@
   <!-- Cabecera: el título y el botón ☰ -->
   <header id="cabecera">
     <h1>Nivel de satisfacción</h1>
-    <button id="boton-menu-principal" aria-label="Menú">☰</button>
+    <button id="boton-menu-principal" aria-label="Menú"><span data-icono="menu"></span></button>
   </header>
 
   <!-- Menú ☰ de la esquina: inicio de sesión, respaldo y grupos -->
   <div id="menu-principal" hidden>
-    <button id="abrir-informe">📊 Mi informe</button>
-    <button id="exportar">💾 Guardar respaldo</button>
-    <button id="importar">📂 Cargar respaldo</button>
-    <button id="renombrar-grupo">✏️ Renombrar este grupo</button>
-    <button id="borrar-grupo">🗑️ Borrar este grupo</button>
+    <button id="abrir-informe"><span data-icono="informe"></span> Mi informe</button>
+    <button id="exportar"><span data-icono="guardar"></span> Guardar respaldo</button>
+    <button id="importar"><span data-icono="cargar"></span> Cargar respaldo</button>
+    <button id="renombrar-grupo"><span data-icono="editar"></span> Renombrar este grupo</button>
+    <button id="borrar-grupo"><span data-icono="borrar"></span> Borrar este grupo</button>
     <!-- Dice "Iniciar sesión" o "Cerrar sesión" según el caso (lo pone nube.js) -->
-    <button id="boton-sesion">👤 Iniciar sesión</button>
-    <button id="abrir-temas">🎨 Personalizar</button>
-    <button id="ver-recorrido">🧭 Ver recorrido</button>
+    <button id="boton-sesion"><span data-icono="usuario"></span> Iniciar sesión</button>
+    <button id="abrir-temas"><span data-icono="personalizar"></span> Personalizar</button>
+    <button id="ver-recorrido"><span data-icono="recorrido"></span> Ver recorrido</button>
     <!-- Solo aparece cuando el navegador deja instalar la app -->
-    <button id="instalar-app" hidden>📲 Instalar app</button>
+    <button id="instalar-app" hidden><span data-icono="instalar"></span> Instalar app</button>
     <!-- Selector de archivos escondido: lo abre el botón "Cargar respaldo" -->
     <input type="file" id="archivo-respaldo" accept=".json,application/json" hidden>
   </div>
@@ -84,21 +86,21 @@
   </div>
 
   <!-- Papelera: aparece abajo solo mientras llevo una tarjeta o una pestaña -->
-  <div id="papelera" hidden>🗑️ Suelta aquí para borrar</div>
+  <div id="papelera" hidden><span data-icono="borrar"></span> Suelta aquí para borrar</div>
 
   <!-- Ventana de iniciar sesión: correo → enlace en el correo -->
   <div id="ventana-sesion" hidden>
     <div class="ventana">
-      <button class="cerrar-ventana" id="cerrar-ventana" aria-label="Cerrar">✕</button>
+      <button class="cerrar-ventana" id="cerrar-ventana" aria-label="Cerrar"><span data-icono="cerrar"></span></button>
       <h2>Iniciar sesión</h2>
 
       <!-- Paso 1: escribir el correo -->
       <div id="paso-correo">
         <p>Todo funciona sin iniciar sesión, pero tus barras solo quedan en este celular. Si inicias sesión:</p>
         <ul class="beneficios">
-          <li>☁️ Se guardan en la nube.</li>
-          <li>📱 No las pierdes si cambias de celular o se borran los datos.</li>
-          <li>🔄 Las ves en todos tus dispositivos.</li>
+          <li><span data-icono="nube"></span> Se guardan en la nube.</li>
+          <li><span data-icono="celular"></span> No las pierdes si cambias de celular o se borran los datos.</li>
+          <li><span data-icono="sincronizar"></span> Las ves en todos tus dispositivos.</li>
         </ul>
         <p>Escribe tu correo y te enviamos un enlace para entrar.</p>
         <input type="email" id="correo" placeholder="tucorreo@ejemplo.com" autocomplete="email">
@@ -107,7 +109,7 @@
 
       <!-- Paso 2: ir al correo y tocar el enlace -->
       <div id="paso-enlace" hidden>
-        <p>📬 Revisa tu correo y toca <b>"Sign in"</b>.</p>
+        <p><span data-icono="correo"></span> Revisa tu correo y toca <b>"Sign in"</b>.</p>
         <small>Ábrelo en este mismo dispositivo. Si no llega, mira en la carpeta de spam.</small>
         <button class="boton-texto" id="otro-correo">Usar otro correo</button>
       </div>
@@ -119,22 +121,27 @@
   <!-- Personalizar: el color y el fondo (los botones los pone tema.js) -->
   <div id="ventana-tema" hidden>
     <div class="ventana">
-      <button class="cerrar-ventana" id="cerrar-temas" aria-label="Cerrar">✕</button>
-      <h2>🎨 Personalizar</h2>
+      <button class="cerrar-ventana" id="cerrar-temas" aria-label="Cerrar"><span data-icono="cerrar"></span></button>
+      <h2><span data-icono="personalizar"></span> Personalizar</h2>
+      <h3>Modo</h3>
+      <div id="lista-modos"></div>
       <h3>Color</h3>
-      <div id="lista-temas"></div>
+      <div id="lista-colores"></div>
+      <!-- Selector de color escondido: lo abre la bolita del arcoíris -->
+      <input type="color" id="elegir-color">
       <h3>Fondo</h3>
       <div id="lista-fondos"></div>
       <!-- Selector de fotos escondido: lo abre el botón "Tu foto" -->
       <input type="file" id="foto-fondo" accept="image/*" hidden>
+      <button id="listo-temas">Listo</button>
     </div>
   </div>
 
   <!-- Mi informe: pantalla completa que resume el historial (la llena informe.js) -->
   <div id="informe" hidden>
     <div class="informe-cabeza">
-      <h2>📊 Mi informe</h2>
-      <button class="cerrar-ventana" id="cerrar-informe" aria-label="Cerrar">✕</button>
+      <h2><span data-icono="informe"></span> Mi informe</h2>
+      <button class="cerrar-ventana" id="cerrar-informe" aria-label="Cerrar"><span data-icono="cerrar"></span></button>
     </div>
     <div class="informe-periodo">
       <button data-periodo="semana">Semana</button>
@@ -146,11 +153,11 @@
   <!-- Pregunta la primera vez que se abre la app: ¿quiere el recorrido? -->
   <div id="oferta-recorrido" hidden>
     <div class="ventana">
-      <h2>¡Hola! 💚</h2>
+      <h2>¡Hola!</h2>
       <p>¿Quieres que te muestre cómo funciona? Son unos pocos pasos.</p>
       <button id="oferta-si">Sí, muéstrame</button>
       <button class="boton-texto" id="oferta-no">Ahora no</button>
-      <small>Lo puedes ver cuando quieras en el menú ☰.</small>
+      <small>Lo puedes ver cuando quieras en el menú de arriba.</small>
     </div>
   </div>
 
@@ -170,9 +177,9 @@
 
   <!-- Conecta JavaScript: la librería de Supabase (la nube), la app, y la parte de la nube -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
-  <script src="app.js?v=9"></script>
-  <script src="nube.js?v=9"></script>
-  <script src="recorrido.js?v=9"></script>
-  <script src="informe.js?v=9"></script>
+  <script src="app.js?v=11"></script>
+  <script src="nube.js?v=11"></script>
+  <script src="recorrido.js?v=11"></script>
+  <script src="informe.js?v=11"></script>
 </body>
 </html>

@@ -440,12 +440,13 @@ function explicarError(error) {
 function pintarSesion() {
   const boton = document.getElementById("boton-sesion");
   if (!nube) {
-    boton.textContent = "👤 Iniciar sesión (sin conexión)";
+    boton.innerHTML = icono("usuario") + " Iniciar sesión (sin conexión)";
     boton.disabled = true;
   } else if (usuario) {
-    boton.textContent = "👤 Cerrar sesión (" + usuario.email + ")";
+    boton.innerHTML = icono("usuario");
+    boton.append(" Cerrar sesión (" + usuario.email + ")"); // El correo va como texto puro
   } else {
-    boton.textContent = "👤 Iniciar sesión";
+    boton.innerHTML = icono("usuario") + " Iniciar sesión";
   }
 }
 
@@ -471,6 +472,10 @@ if (nube) {
   };
 
   document.getElementById("cerrar-ventana").onclick = cerrarVentana;
+  // Tocar afuera de la cajita también la cierra
+  document.getElementById("ventana-sesion").addEventListener("click", function (evento) {
+    if (evento.target === this) cerrarVentana();
+  });
 
   // Paso 1: pedir el enlace al correo. El enlace trae de vuelta a esta misma página.
   // (Cuando haya correo propio, se puede cambiar por un código de números: queda mejor en la app instalada)
