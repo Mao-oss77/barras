@@ -279,6 +279,12 @@ function recargar(id) {
     localStorage.removeItem(id + "-contoRelleno"); // Misma sesión (o no es con niveles): no suma
   }
   actualizarBarra(id);
+  // Saltito de alegría (estilos.css)
+  const barra = document.getElementById("barra-" + id);
+  barra.classList.remove("llenando");
+  void barra.offsetWidth;
+  barra.classList.add("llenando");
+  barra.addEventListener("animationend", () => barra.classList.remove("llenando"), { once: true });
 }
 
 // Deshace la última recarga de esta actividad
@@ -654,7 +660,7 @@ function actualizarBarra(id) {
   relleno.style.height = porcentaje + "%";
 
   if (porcentaje > 50) {
-    relleno.style.background = "#22b14c";  // Verde
+    relleno.style.background = "var(--acento)";  // El color del tema (verde en el de siempre)
   } else if (porcentaje > 20) {
     relleno.style.background = "#f2c200";  // Amarillo
   } else {
@@ -842,9 +848,20 @@ function pintarPestanas() {
 // Muestra solo las barras de un grupo y pinta su pestaña
 function mostrarGrupo(id) {
   grupoActual = id;
+  let puesto = 0; // Para que las tarjetas aparezcan una tras otra
   for (const actividad of actividades) {
-    document.getElementById("necesidad-" + actividad.id).hidden = actividad.grupo !== id;
+    const tarjeta = document.getElementById("necesidad-" + actividad.id);
+    tarjeta.hidden = actividad.grupo !== id;
+    if (!tarjeta.hidden) tarjeta.style.setProperty("--i", puesto++);
   }
+  document.getElementById("tarjeta-agregar").style.setProperty("--i", puesto);
+  // Animación de entrada (estilos.css): se quita al rato, para que no se repita al mover tarjetas
+  const panel = document.getElementById("panel");
+  panel.classList.remove("entrando");
+  void panel.offsetWidth; // Obliga al navegador a notar que se quitó, para que vuelva a empezar
+  panel.classList.add("entrando");
+  clearTimeout(mostrarGrupo.espera);
+  mostrarGrupo.espera = setTimeout(() => panel.classList.remove("entrando"), 1200);
   pintarPestanas();
   // Las preestablecidas solo salen en Satisfacción
   document.getElementById("preestablecidas").hidden = id !== GRUPO_PRINCIPAL.id;

@@ -1,42 +1,128 @@
+/* ===== TEMAS DE COLOR ===== */
+/* Todos los colores de la app salen de aquí. Cada tema cambia estos valores
+   (el tema elegido lo pone tema.js en <html data-tema="...">). */
+:root {
+  --acento: #22b14c;        /* El color principal: títulos, pestañas, barras llenas */
+  --acento-texto: white;    /* Letra encima del color principal */
+  --fondo: white;           /* Fondo de la página */
+  --superficie: white;      /* Fondo de tarjetas, menús y ventanas */
+  --texto: #111;
+  --texto-suave: #555;
+  --texto-apagado: #999;
+  --borde: #ddd;
+  --borde-fuerte: #bbb;     /* Punteado de "Nueva barra" */
+  --marco: black;           /* El vaso de las barras */
+  --vacio: #f0f0f0;         /* Lo vacío de las barras y del informe */
+  --tinte: color-mix(in srgb, var(--acento) 14%, var(--superficie));   /* Fondo suave de los botones */
+  --vidrio: color-mix(in srgb, var(--superficie) 82%, transparent);    /* Tarjetas medio transparentes */
+  --borde-vidrio: color-mix(in srgb, var(--borde) 60%, transparent);
+  --sombra: 0 6px 20px rgba(0, 0, 0, 0.07);
+  color-scheme: light;      /* Botones y cajas de texto del navegador en claro */
+}
+
+:root[data-tema="oceano"] {
+  --acento: #1e88e5;
+}
+
+:root[data-tema="lavanda"] {
+  --acento: #8e5cd9;
+}
+
+:root[data-tema="noche"] {
+  --acento: #3ddc84;
+  --acento-texto: #0d1f14;
+  --fondo: #121212;
+  --superficie: #1e1e1e;
+  --texto: #eeeeee;
+  --texto-suave: #b5b5b5;
+  --texto-apagado: #808080;
+  --borde: #333;
+  --borde-fuerte: #555;
+  --marco: #d8d8d8;
+  --vacio: #2a2a2a;
+  --tinte: color-mix(in srgb, var(--acento) 18%, var(--superficie));
+  --sombra: 0 6px 20px rgba(0, 0, 0, 0.35);
+  color-scheme: dark;       /* Botones y cajas de texto del navegador en oscuro */
+}
+
 /* ===== TODA LA PÁGINA ===== */
+html {
+  background: var(--fondo);  /* Por si la página se estira más allá del borde */
+}
+
 body {
-  font-family: Arial, sans-serif; /* Letra lisa; si no hay Arial, usa otra parecida */
+  /* Nunito: letra redondita y amigable. Si no carga, usa la del sistema */
+  font-family: "Nunito", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  color: var(--texto);
+  margin: 0;
+  padding-bottom: 40px;
+  min-height: 100vh;
+}
+
+/* Todos los botones y cajas de texto usan la misma letra que la página */
+button, input, select {
+  font-family: inherit;
+}
+
+/* ===== CABECERA: el título y el ☰ en una franja flotante ===== */
+#cabecera {
+  position: relative;
+  max-width: 700px;
+  margin: 12px auto 14px;
+  width: calc(100% - 24px);
+  box-sizing: border-box;
+  padding: 12px 56px;
+  border-radius: 22px;
+  background: var(--vidrio);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: var(--sombra);
 }
 
 /* ===== TÍTULO DE ARRIBA ===== */
 h1 {
   text-align: center; /* Centrado */
-  color: #22b14c;     /* Verde */
-  font-size: 28px;
-  padding: 0 48px;    /* Espacio a los lados para que no choque con el botón ☰ */
+  color: var(--acento);
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  margin: 0;
 }
 
 /* ===== BOTÓN ☰ DE LA ESQUINA ===== */
 #boton-menu-principal {
-  position: absolute;   /* Se sale del orden normal y se ubica donde yo diga */
-  top: 12px;
-  right: 12px;
-  width: 40px;
-  height: 40px;
+  position: absolute;   /* Dentro de la cabecera, a la derecha y centrado de alto */
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  width: 42px;
+  height: 42px;
   border: none;
+  border-radius: 14px;
   background: none;
-  font-size: 26px;
-  color: #22b14c;
+  font-size: 24px;
+  color: var(--acento);
   cursor: pointer;
+  transition: background 0.2s;
+}
+#boton-menu-principal:active {
+  background: var(--tinte);
 }
 
 /* ===== MENÚ QUE SE ABRE CON ☰ ===== */
 #menu-principal {
   position: absolute;
-  top: 56px;
-  right: 12px;
+  top: 76px;
+  right: 16px;
   z-index: 10;          /* Que quede por encima de las barras */
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); /* Sombrita para que parezca flotando */
-  padding: 6px;
-  min-width: 200px;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 20px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18); /* Sombra para que parezca flotando */
+  padding: 8px;
+  min-width: 220px;
+  transform-origin: top right;
+  animation: abrir-menu 0.18s ease-out;
 }
 
 #menu-principal button {
@@ -47,35 +133,58 @@ h1 {
   margin: 2px 0;
   border: none;
   background: none;
+  color: var(--texto);
   font-size: 15px;
-  border-radius: 8px;
+  border-radius: 12px;
   cursor: pointer;
+}
+#menu-principal button:not(:disabled):active {
+  background: var(--tinte);
 }
 
 /* Los botones que no se pueden usar ahora se ven apagados */
 #menu-principal button:disabled {
-  color: #aaa;
+  color: var(--texto-apagado);
   cursor: default;
 }
 
 
-/* ===== EL MARCO NEGRO (EL VASO) ===== */
+/* ===== EL VASO ===== */
 .barra {
   width: 70px;                /* Ancho */
   height: 130px;              /* Alto */
-  border: 4px solid black;    /* Borde negro de 4px */
+  border: 4px solid var(--marco);    /* Borde de 4px (negro, o claro en el tema Noche) */
+  border-radius: 20px;        /* Esquinas suaves, sin picos */
+  overflow: hidden;           /* Que el líquido también quede redondeado */
+  background: var(--vacio);   /* Lo vacío del vaso */
   display: flex;              /* Activa el modo de acomodar cosas adentro */
   flex-direction: column;     /* Acomoda lo de adentro en columna (vertical) */
   justify-content: flex-end;  /* Lo pega abajo, para que se llene desde el piso */
   margin: 0 auto;             /* Centra la barra dentro de su cajita */
-  transition: transform 0.15s; /* El agrandado al agarrarla se ve suave */
+  transition: transform 0.15s, box-shadow 0.15s; /* El agrandado al agarrarla se ve suave */
 }
 
-/* ===== LO VERDE DE ADENTRO (EL LÍQUIDO) ===== */
+/* ===== EL LÍQUIDO DE ADENTRO ===== */
 .relleno {
+  position: relative;
   width: 100%;          /* Ocupa todo el ancho del vaso */
-  background: #22b14c;  /* Verde. La altura la pone JavaScript */
-  transition: background 1s;  /* El color cambia suavemente en 1 segundo */
+  background: var(--acento);  /* La altura y el color los pone JavaScript */
+  /* Sube y baja suave, y el color cambia despacio */
+  transition: height 0.8s cubic-bezier(0.22, 0.9, 0.3, 1), background 1s;
+}
+
+/* Un brillo de lado, para que se vea como líquido y no como un bloque plano */
+.relleno::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0) 55%);
+  pointer-events: none;
+}
+
+/* Mientras la arrastro con el dedo, el líquido sigue al dedo sin retraso */
+.barra.agarrada .relleno {
+  transition: background 1s;
 }
 
 /* ===== PANEL QUE CONTIENE TODAS LAS BARRAS ===== */
@@ -92,19 +201,23 @@ h1 {
 /* ===== TARJETA DE CADA BARRA ===== */
 .necesidad {
   text-align: center;
-  border: 1px solid #ddd;
-  border-radius: 12px;
-  padding: 12px 8px;
+  border: 1px solid var(--borde-vidrio);
+  border-radius: 24px;
+  padding: 16px 10px 12px;
   min-width: 0;
   position: relative;
+  background: var(--vidrio);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: var(--sombra);
 }
 
 /* ===== NOMBRE DEBAJO DE LA BARRA ===== */
 .necesidad p {
-  color: #22b14c;
-  font-weight: bold;
-  font-size: 18px;
-  margin: 8px 0;
+  color: var(--acento);
+  font-weight: 800;
+  font-size: 17px;
+  margin: 10px 0 6px;
 }
 
 
@@ -113,6 +226,19 @@ h1 {
   display: block;   /* Cada botón en su propio renglón, uno debajo del otro */
   margin: 6px auto; /* 6px de espacio arriba y abajo; auto a los lados para centrarlo */
   width: 100%;      /* Los dos del mismo ancho, para que se vean parejos */
+  padding: 9px 10px;
+  border: none;
+  border-radius: 999px;     /* Forma de píldora */
+  background: var(--tinte);
+  color: var(--acento);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.12s, background 0.2s;
+}
+/* Al tocarlo se hunde un poquito */
+.necesidad button:active {
+  transform: scale(0.95);
 }
 
 /* ===== CAJITA DE AJUSTES DE DURACIÓN ===== */
@@ -121,6 +247,12 @@ h1 {
   width: 100%;             /* Del mismo ancho que los botones */
   box-sizing: border-box;  /* Que el borde no lo haga más ancho */
   margin: 4px 0;           /* Un poquito de espacio entre uno y otro */
+  padding: 8px 10px;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  background: var(--superficie);
+  color: var(--texto);
+  font-size: 15px;
 }
 /* ===== OCULTAR DE VERDAD LO QUE TIENE "hidden" ===== */
 /* Sin esto, el "display: block" de los botones les gana y no se esconden */
@@ -142,7 +274,7 @@ h1 {
 /* ===== BARRA AGARRADA (YA SE PUEDE ARRASTRAR) ===== */
 .barra.agarrada {
   transform: scale(1.08);                    /* Se agranda un poquito */
-  box-shadow: 0 0 0 4px rgba(34, 177, 76, 0.35); /* Halo verde alrededor */
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--acento) 35%, transparent); /* Halo del color principal */
 }
 
 /* ===== TEXTOS PEQUEÑOS (PISTA Y ETIQUETAS DE AJUSTES) ===== */
@@ -150,14 +282,15 @@ h1 {
 .ajustes small {
   display: block;   /* Cada uno en su propio renglón */
   font-size: 13px;  /* Letra pequeña */
-  color: #555;      /* Gris oscuro */
+  color: var(--texto-suave);      /* Gris oscuro */
   margin: 4px 0;
 }
 
 
 /* ===== BOTÓN DE QUITAR BARRA ===== */
-.boton-quitar {
+.necesidad .boton-quitar {
   color: #e03131;  /* Letra roja, para que se note que es peligroso */
+  background: rgba(224, 49, 49, 0.1);
 }
 
 /* ===== BOTÓN ⋮ EN LA ESQUINA DE LA TARJETA ===== */
@@ -168,19 +301,23 @@ h1 {
   width: 32px;
   height: 32px;
   margin: 0;
+  padding: 0;
   border: none;
+  border-radius: 10px;
   background: none;
+  color: var(--texto-suave);
   font-size: 22px;
   cursor: pointer;
 }
 
 /* ===== TARJETA DE AGREGAR BARRA ===== */
 .tarjeta-agregar {
-  border-style: dashed;   /* Borde punteado: se nota que es distinta */
+  border: 2px dashed var(--borde-fuerte);   /* Borde punteado: se nota que es distinta */
+  box-shadow: none;
 }
 
 .tarjeta-agregar p {
-  color: #999;            /* Nombre en gris en vez de verde */
+  color: var(--texto-apagado);            /* Nombre en gris en vez de verde */
 }
 
 /* La "barra" vacía con el + adentro */
@@ -188,10 +325,12 @@ h1 {
   width: 78px;              /* Mismo tamaño que las barras (70 + bordes) */
   height: 138px;            /* (130 + bordes) */
   margin: 0 auto;           /* Centrada */
-  border: 4px dashed #bbb;  /* Borde gris punteado */
+  padding: 0;
+  border: 4px dashed var(--borde-fuerte);  /* Borde gris punteado */
+  border-radius: 20px;      /* Redondeada, como las barras */
   background: none;         /* Sin fondo */
   font-size: 50px;          /* El + grandote */
-  color: #bbb;
+  color: var(--borde-fuerte);
   cursor: pointer;
 }
 
@@ -207,25 +346,34 @@ h1 {
 .pestana {
   min-width: 0;                /* Que puedan encogerse en el celular */
   max-width: 180px;
-  padding: 10px 16px;
+  padding: 10px 18px;
   font-size: 15px;
-  border: 2px solid #22b14c;   /* Borde verde */
-  border-radius: 20px;         /* Forma de píldora */
-  background: white;
-  color: #22b14c;
+  font-weight: 700;
+  border: 2px solid transparent;
+  border-radius: 999px;        /* Forma de píldora */
+  background: var(--vidrio);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: var(--sombra);
+  color: var(--acento);
   cursor: pointer;
+  transition: background 0.25s, color 0.25s, transform 0.12s, box-shadow 0.25s;
+}
+.pestana:active {
+  transform: scale(0.96);
 }
 
-/* La pestaña que estoy viendo se pinta de verde */
+/* La pestaña que estoy viendo se pinta del color principal y brilla un poquito */
 .pestana.activa {
-  background: #22b14c;
-  color: white;
+  background: var(--acento);
+  color: var(--acento-texto);
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--acento) 40%, transparent);
 }
 
 /* El "+" para crear un grupo nuevo: punteado, como la tarjeta de agregar */
 .pestana-nueva {
-  border-style: dashed;
-  font-weight: bold;
+  border: 2px dashed var(--acento);
+  font-weight: 800;
 }
 
 /* Que al mantener hundida una pestaña no se seleccione el texto */
@@ -240,11 +388,11 @@ h1 {
 .levantada {
   position: relative;
   z-index: 20;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.25);
   cursor: grabbing;
 }
 .necesidad.levantada {
-  background: white;
+  background: var(--superficie);
 }
 
 /* ===== VENTANA DE INICIAR SESIÓN ===== */
@@ -264,38 +412,57 @@ h1 {
   position: relative;
   width: 100%;
   max-width: 340px;
-  background: white;
-  border-radius: 16px;
-  padding: 20px;
+  background: var(--superficie);
+  border-radius: 26px;
+  padding: 22px;
   text-align: center;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+  animation: entrar-ventana 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  box-sizing: border-box;
 }
 
 .ventana h2 {
   margin-top: 0;
-  color: #22b14c;
+  color: var(--acento);
 }
 
 .ventana input {
   width: 100%;
   box-sizing: border-box;
-  padding: 10px;
+  padding: 12px;
   margin: 6px 0;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+  color: var(--texto);
   font-size: 16px;          /* Con 16px o más, el iPhone no hace zoom al escribir */
 }
 
 .ventana button {
   display: block;
   width: 100%;
-  padding: 10px;
-  margin: 6px 0;
+  padding: 12px;
+  margin: 8px 0;
+  border: none;
+  border-radius: 999px;
+  background: var(--acento);
+  color: var(--acento-texto);
   font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.12s;
+}
+.ventana button:active {
+  transform: scale(0.97);
 }
 
 /* "Usar otro correo": botón que parece un enlace */
 .ventana .boton-texto {
   border: none;
   background: none;
-  color: #555;
+  color: var(--texto-suave);
   text-decoration: underline;
 }
 
@@ -315,7 +482,7 @@ h1 {
 .ventana small,
 #mensaje-sesion {
   display: block;
-  color: #555;
+  color: var(--texto-suave);
   font-size: 14px;
 }
 
@@ -328,8 +495,8 @@ h1 {
   z-index: 15;              /* Encima de las barras, debajo de lo que llevo */
   padding: 18px 28px;
   border: 3px dashed #e03131;
-  border-radius: 20px;
-  background: white;
+  border-radius: 999px;
+  background: var(--superficie);
   color: #e03131;
   font-size: 16px;
   font-weight: bold;
@@ -370,10 +537,10 @@ h1 {
   margin: 0;
   padding: 4px 8px;
   font-size: 13px;
-  border: 1px solid #22b14c;
+  border: 1px solid var(--acento);
   border-radius: 12px;      /* Forma de píldora */
-  background: white;
-  color: #22b14c;
+  background: var(--superficie);
+  color: var(--acento);
   cursor: pointer;
 }
 
@@ -393,7 +560,7 @@ h1 {
 .conteo {
   display: block;
   font-size: 13px;
-  color: #555;
+  color: var(--texto-suave);
   margin: 4px 0;
 }
 
@@ -444,7 +611,7 @@ h1 {
   right: 16px;
   max-width: 340px;
   margin: 0 auto;
-  background: white;
+  background: var(--superficie);
   border-radius: 16px;
   padding: 16px 18px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
@@ -452,14 +619,14 @@ h1 {
 }
 #recorrido-globo h3 {
   margin: 4px 0 6px;
-  color: #22b14c;
+  color: var(--acento);
 }
 #recorrido-globo p {
   margin: 0 0 12px;
   line-height: 1.4;
 }
 #recorrido-cuenta {
-  color: #999;
+  color: var(--texto-apagado);
 }
 .recorrido-botones {
   display: flex;
@@ -469,7 +636,7 @@ h1 {
 .recorrido-botones .boton-texto {
   border: none;
   background: none;
-  color: #555;
+  color: var(--texto-suave);
   text-decoration: underline;
   font-size: 15px;
   cursor: pointer;
@@ -479,8 +646,8 @@ h1 {
   padding: 8px 20px;
   border: none;
   border-radius: 8px;
-  background: #22b14c;
-  color: white;
+  background: var(--acento);
+  color: var(--acento-texto);
   font-size: 15px;
   cursor: pointer;
 }
@@ -495,7 +662,7 @@ body.sin-scroll {
   position: fixed;
   inset: 0;
   z-index: 35;
-  background: white;
+  background: var(--superficie);
   overflow-y: auto;        /* El informe se desliza por dentro */
   padding: 0 16px 32px;
 }
@@ -507,7 +674,7 @@ body.sin-scroll {
   text-align: center;
 }
 .informe-cabeza h2 {
-  color: #22b14c;
+  color: var(--acento);
   margin: 18px 0 12px;
 }
 .informe-cabeza .cerrar-ventana {
@@ -530,16 +697,16 @@ body.sin-scroll {
 }
 .informe-periodo button {
   padding: 8px 20px;
-  border: 2px solid #22b14c;
+  border: 2px solid var(--acento);
   border-radius: 999px;
-  background: white;
-  color: #22b14c;
+  background: var(--superficie);
+  color: var(--acento);
   font-size: 15px;
   cursor: pointer;
 }
 .informe-periodo button.elegido {
-  background: #22b14c;
-  color: white;
+  background: var(--acento);
+  color: var(--acento-texto);
 }
 
 #informe-contenido {
@@ -548,8 +715,8 @@ body.sin-scroll {
 }
 
 .informe-seccion {
-  border: 1px solid #ddd;
-  border-radius: 12px;
+  border: 1px solid var(--borde);
+  border-radius: 20px;
   padding: 14px 16px;
   margin-top: 14px;
 }
@@ -560,7 +727,7 @@ body.sin-scroll {
 .informe-seccion h4 {
   margin: 12px 0 4px;
   font-size: 14px;
-  color: #555;
+  color: var(--texto-suave);
 }
 
 /* Resumen de arriba: el número grande */
@@ -573,7 +740,7 @@ body.sin-scroll {
 .informe-numero {
   font-size: 44px;
   font-weight: bold;
-  color: #22b14c;
+  color: var(--acento);
 }
 .informe-grande {
   font-size: 18px;
@@ -581,7 +748,7 @@ body.sin-scroll {
 }
 .informe-mejor {
   margin-top: 10px !important;
-  color: #22b14c;
+  color: var(--acento);
   font-weight: bold;
 }
 
@@ -593,29 +760,29 @@ body.sin-scroll {
 }
 .informe-letra {
   text-align: center;
-  color: #999;
+  color: var(--texto-apagado);
 }
 .informe-dia {
   aspect-ratio: 1;          /* Cuadrados */
-  border-radius: 8px;
+  border-radius: 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   font-size: 13px;
-  background: #f0f0f0;
-  color: #777;
+  background: var(--vacio);
+  color: var(--texto-apagado);
 }
 .informe-dia small {
   font-size: 11px;
 }
 /* Tonos de verde: mientras más hice ese día, más fuerte */
-.informe-dia[data-tono="1"] { background: #c8ecd3; color: #333; }
-.informe-dia[data-tono="2"] { background: #8fd8a5; color: #222; }
-.informe-dia[data-tono="3"] { background: #52c473; color: white; }
-.informe-dia[data-tono="4"] { background: #22b14c; color: white; }
+.informe-dia[data-tono="1"] { background: color-mix(in srgb, var(--acento) 25%, var(--superficie)); color: var(--texto); }
+.informe-dia[data-tono="2"] { background: color-mix(in srgb, var(--acento) 50%, var(--superficie)); color: var(--texto); }
+.informe-dia[data-tono="3"] { background: color-mix(in srgb, var(--acento) 75%, var(--superficie)); color: var(--acento-texto); }
+.informe-dia[data-tono="4"] { background: var(--acento); color: var(--acento-texto); }
 .informe-dia.hoy {
-  outline: 2px solid #333;
+  outline: 2px solid var(--texto);
 }
 
 /* Filas con nombre, tirita y número */
@@ -637,21 +804,233 @@ body.sin-scroll {
 }
 .informe-valor {
   text-align: right;
-  color: #555;
+  color: var(--texto-suave);
 }
 .informe-tira {
   height: 12px;
   border-radius: 6px;
-  background: #f0f0f0;
+  background: var(--vacio);
   overflow: hidden;
 }
 .informe-tira-relleno {
   height: 100%;
-  background: #22b14c;
+  background: var(--acento);
   border-radius: 6px;
 }
 .informe-suave {
-  color: #999;
+  color: var(--texto-apagado);
   display: block;
   margin-top: 6px;
+}
+
+/* ===== VENTANA DE TEMAS ===== */
+#ventana-tema {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+#lista-temas {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.ventana #lista-temas button {
+  margin: 0;
+  padding: 12px 8px;
+  border: 2px solid var(--borde);
+  border-radius: 12px;
+  background: var(--superficie);
+  color: var(--texto);
+  cursor: pointer;
+}
+
+/* El tema que está puesto ahora */
+.ventana #lista-temas button.elegido {
+  border-color: var(--acento);
+  font-weight: bold;
+}
+
+/* La muestra: una barrita con el color del tema, sobre el fondo del tema */
+.muestra-tema {
+  display: block;
+  width: 34px;
+  height: 52px;
+  margin: 0 auto 6px;
+  border: 3px solid;
+  border-radius: 4px;
+}
+
+/* ===== FONDOS ===== */
+/* El fondo vive en dos capas pegadas a la pantalla, detrás de todo:
+   - body::before: el color, el degradado o la foto ("--capa")
+   - body::after: el dibujito que se repite encima ("--textura"), pintado de "--textura-color"
+   Cada fondo solo cambia esas variables. Las muestras de la ventana Personalizar usan las mismas. */
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+body::before,
+.muestra-fondo {
+  z-index: -2;
+  background: var(--capa, var(--fondo));
+}
+body::after,
+.muestra-fondo::after {
+  z-index: -1;
+  background-color: var(--textura-color, transparent);
+  -webkit-mask: var(--textura, none) 0 0 / var(--textura-tam, auto) repeat;
+  mask: var(--textura, none) 0 0 / var(--textura-tam, auto) repeat;
+}
+
+/* Cada muestra arranca limpia (si no, heredaría el dibujito del fondo que está puesto) */
+.muestra-fondo {
+  --capa: var(--fondo);
+  --textura: none;
+  --textura-color: transparent;
+}
+
+/* Lisos con dibujitos: toman el color del tema, así combinan solos */
+[data-fondo="puntos"] {
+  --capa: radial-gradient(circle, color-mix(in srgb, var(--acento) 24%, transparent) 1.8px, transparent 2.3px) 0 0 / 22px 22px, var(--fondo);
+}
+[data-fondo="cuadros"] {
+  --capa:
+    linear-gradient(color-mix(in srgb, var(--acento) 12%, transparent) 1px, transparent 1px) 0 0 / 26px 26px,
+    linear-gradient(90deg, color-mix(in srgb, var(--acento) 12%, transparent) 1px, transparent 1px) 0 0 / 26px 26px,
+    var(--fondo);
+}
+[data-fondo="ondas"] {
+  --textura: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='40'%3E%3Cpath d='M0 20 Q20 6 40 20 T80 20' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  --textura-tam: 80px 40px;
+  --textura-color: color-mix(in srgb, var(--acento) 18%, transparent);
+}
+[data-fondo="burbujas"] {
+  --capa: color-mix(in srgb, var(--acento) 5%, var(--fondo));
+  --textura: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Ccircle cx='22' cy='26' r='11' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='84' cy='42' r='6' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='58' cy='96' r='15' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='106' cy='104' r='3.5' fill='black'/%3E%3Ccircle cx='28' cy='86' r='3' fill='black'/%3E%3Ccircle cx='100' cy='12' r='2.5' fill='black'/%3E%3C/svg%3E");
+  --textura-tam: 120px 120px;
+  --textura-color: color-mix(in srgb, var(--acento) 22%, transparent);
+}
+[data-fondo="garabatos"] {
+  --capa: color-mix(in srgb, var(--acento) 6%, var(--fondo));
+  --textura: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Cpath d='M30 44 L17 31 A7.5 7.5 0 0 1 30 21 A7.5 7.5 0 0 1 43 31 Z' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M112 14 L116 26 L129 26 L119 34 L123 46 L112 38 L101 46 L105 34 L95 26 L108 26 Z' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M42 132 V104 L64 99 V126' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='37' cy='132' r='5' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='59' cy='126' r='5' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M118 96 v18 M109 105 h18' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='80' cy='70' r='7' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M8 80 q8 -10 16 0 t16 0' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  --textura-tam: 150px 150px;
+  --textura-color: color-mix(in srgb, var(--acento) 20%, transparent);
+}
+
+/* Degradados de colores */
+[data-fondo="atardecer"] { --capa: linear-gradient(160deg, #ffd6a5 0%, #ff9a8b 45%, #d77fd8 100%); }
+[data-fondo="aurora"]    { --capa: linear-gradient(160deg, #a8edea 0%, #c3b5fd 55%, #fed6e3 100%); }
+[data-fondo="mar"]       { --capa: linear-gradient(160deg, #89f7fe 0%, #66a6ff 100%); }
+[data-fondo="bosque"]    { --capa: linear-gradient(160deg, #e3fdb5 0%, #96e6a1 55%, #5fc9a4 100%); }
+[data-fondo="durazno"]   { --capa: linear-gradient(160deg, #fff1eb 0%, #ffd3c2 50%, #f9b4c8 100%); }
+[data-fondo="galaxia"] {
+  --capa: linear-gradient(160deg, #1a1446 0%, #4b1d6b 55%, #0f3460 100%);
+  --textura: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90'%3E%3Ccircle cx='12' cy='18' r='1.4' fill='black'/%3E%3Ccircle cx='55' cy='9' r='1' fill='black'/%3E%3Ccircle cx='76' cy='48' r='1.6' fill='black'/%3E%3Ccircle cx='33' cy='62' r='1.1' fill='black'/%3E%3Ccircle cx='64' cy='80' r='1' fill='black'/%3E%3Ccircle cx='8' cy='84' r='1.3' fill='black'/%3E%3Cpath d='M42 34 l1.6 4 4 1.6 -4 1.6 -1.6 4 -1.6 -4 -4 -1.6 4 -1.6 z' fill='black'/%3E%3C/svg%3E");
+  --textura-tam: 90px 90px;
+  --textura-color: rgba(255, 255, 255, 0.75);
+}
+
+/* Tu propia foto (tema.js pone la foto en "--foto") */
+[data-fondo="foto"] {
+  --capa: center / cover no-repeat var(--foto, none), var(--fondo);
+}
+
+/* ===== ANIMACIONES ===== */
+/* El menú ☰ se abre creciendo desde la esquina */
+@keyframes abrir-menu {
+  from { opacity: 0; transform: scale(0.92); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* Las ventanas entran subiendo un poquito */
+@keyframes entrar-ventana {
+  from { opacity: 0; transform: translateY(16px) scale(0.97); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* Al cambiar de grupo, las tarjetas aparecen una tras otra (app.js pone "--i" a cada una) */
+@keyframes aparecer {
+  from { opacity: 0; transform: translateY(14px) scale(0.97); }
+  to   { opacity: 1; transform: none; }
+}
+#panel.entrando .necesidad {
+  animation: aparecer 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation-delay: calc(var(--i, 0) * 45ms);
+}
+
+/* Al llenar una barra, da un saltito de alegría */
+@keyframes saltito {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(1.08); }
+  70%  { transform: scale(0.98); }
+  100% { transform: scale(1); }
+}
+.barra.llenando {
+  animation: saltito 0.5s ease-out;
+}
+
+/* Si la persona pidió menos movimiento en su celular, se quitan las animaciones */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ===== VENTANA PERSONALIZAR: SECCIÓN DE FONDOS ===== */
+.ventana h3 {
+  text-align: left;
+  font-size: 15px;
+  margin: 18px 0 8px;
+  color: var(--texto-suave);
+}
+
+#lista-fondos {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.ventana #lista-fondos button {
+  margin: 0;
+  padding: 0 0 6px;
+  border: 2px solid var(--borde);
+  border-radius: 16px;
+  background: var(--superficie);
+  color: var(--texto);
+  font-size: 12px;
+  font-weight: 700;
+  overflow: hidden;
+}
+.ventana #lista-fondos button.elegido {
+  border-color: var(--acento);
+}
+
+/* La muestra de cada fondo: un cuadrito con el mismo fondo, en chiquito */
+.muestra-fondo {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 64px;
+  margin-bottom: 6px;
+  font-size: 22px;
+  z-index: 0;             /* Encima del botón (la regla compartida con body::before la mandaba atrás) */
+  isolation: isolate;     /* Que su dibujito no se salga detrás de la ventana */
+}
+.muestra-fondo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
 }

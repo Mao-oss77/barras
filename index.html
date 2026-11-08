@@ -15,18 +15,26 @@
   <link rel="apple-touch-icon" href="iconos/icono-180.png">
   <meta name="theme-color" content="#ffffff">
   <!-- Conecta el archivo de estilos (colores, tamaños, posiciones) -->
-  <!-- El "?v=" es la versión: cada vez que cambie estilos.css, app.js, nube.js, recorrido.js o informe.js, hay que subir ese número
+  <!-- El "?v=" es la versión: cada vez que cambie estilos.css, app.js, nube.js, recorrido.js, informe.js o tema.js, hay que subir ese número
        (en todos a la vez). Así el celular sabe que tiene que pedirlos de nuevo y no mezcla viejos con nuevos. -->
-  <link rel="stylesheet" href="estilos.css?v=7">
+  <!-- Letra Nunito (redondita y amigable), de Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800&display=swap">
+  <link rel="stylesheet" href="estilos.css?v=9">
+  <!-- Pone el color y el fondo elegidos antes de pintar la página -->
+  <script src="tema.js?v=9"></script>
 </head>
 
 <!-- ===== CUERPO: todo lo que SÍ se ve en la página ===== -->
 <body>
-  <!-- Título grande de arriba -->
-  <h1>Nivel de satisfacción</h1>
+  <!-- Cabecera: el título y el botón ☰ -->
+  <header id="cabecera">
+    <h1>Nivel de satisfacción</h1>
+    <button id="boton-menu-principal" aria-label="Menú">☰</button>
+  </header>
 
   <!-- Menú ☰ de la esquina: inicio de sesión, respaldo y grupos -->
-  <button id="boton-menu-principal" aria-label="Menú">☰</button>
   <div id="menu-principal" hidden>
     <button id="abrir-informe">📊 Mi informe</button>
     <button id="exportar">💾 Guardar respaldo</button>
@@ -35,6 +43,7 @@
     <button id="borrar-grupo">🗑️ Borrar este grupo</button>
     <!-- Dice "Iniciar sesión" o "Cerrar sesión" según el caso (lo pone nube.js) -->
     <button id="boton-sesion">👤 Iniciar sesión</button>
+    <button id="abrir-temas">🎨 Personalizar</button>
     <button id="ver-recorrido">🧭 Ver recorrido</button>
     <!-- Solo aparece cuando el navegador deja instalar la app -->
     <button id="instalar-app" hidden>📲 Instalar app</button>
@@ -107,6 +116,20 @@
     </div>
   </div>
 
+  <!-- Personalizar: el color y el fondo (los botones los pone tema.js) -->
+  <div id="ventana-tema" hidden>
+    <div class="ventana">
+      <button class="cerrar-ventana" id="cerrar-temas" aria-label="Cerrar">✕</button>
+      <h2>🎨 Personalizar</h2>
+      <h3>Color</h3>
+      <div id="lista-temas"></div>
+      <h3>Fondo</h3>
+      <div id="lista-fondos"></div>
+      <!-- Selector de fotos escondido: lo abre el botón "Tu foto" -->
+      <input type="file" id="foto-fondo" accept="image/*" hidden>
+    </div>
+  </div>
+
   <!-- Mi informe: pantalla completa que resume el historial (la llena informe.js) -->
   <div id="informe" hidden>
     <div class="informe-cabeza">
@@ -147,9 +170,9 @@
 
   <!-- Conecta JavaScript: la librería de Supabase (la nube), la app, y la parte de la nube -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
-  <script src="app.js?v=7"></script>
-  <script src="nube.js?v=7"></script>
-  <script src="recorrido.js?v=7"></script>
-  <script src="informe.js?v=7"></script>
+  <script src="app.js?v=9"></script>
+  <script src="nube.js?v=9"></script>
+  <script src="recorrido.js?v=9"></script>
+  <script src="informe.js?v=9"></script>
 </body>
 </html>

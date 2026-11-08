@@ -16,10 +16,10 @@ self.addEventListener("activate", function (evento) {
 self.addEventListener("fetch", function (evento) {
   const pedido = evento.request;
   const direccion = new URL(pedido.url);
-  // Solo me encargo de leer archivos de la app y de la librería de Supabase.
+  // Solo me encargo de leer archivos de la app, la librería de Supabase y la letra (Google Fonts).
   // Lo que se habla con la nube (iniciar sesión, guardar barras) pasa directo.
   const esDeLaApp = direccion.origin === self.location.origin;
-  const esLibreria = direccion.hostname === "cdn.jsdelivr.net";
+  const esLibreria = ["cdn.jsdelivr.net", "fonts.googleapis.com", "fonts.gstatic.com"].includes(direccion.hostname);
   if (pedido.method !== "GET" || (!esDeLaApp && !esLibreria)) return;
 
   evento.respondWith(
