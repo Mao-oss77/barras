@@ -17,7 +17,7 @@
   <!-- Conecta el archivo de estilos (colores, tamaños, posiciones) -->
   <!-- El "?v=" es la versión: cada vez que cambie estilos.css, app.js, nube.js, recorrido.js o informe.js, hay que subir ese número
        (en todos a la vez). Así el celular sabe que tiene que pedirlos de nuevo y no mezcla viejos con nuevos. -->
-  <link rel="stylesheet" href="estilos.css?v=6">
+  <link rel="stylesheet" href="estilos.css?v=7">
 </head>
 
 <!-- ===== CUERPO: todo lo que SÍ se ve en la página ===== -->
@@ -77,7 +77,7 @@
   <!-- Papelera: aparece abajo solo mientras llevo una tarjeta o una pestaña -->
   <div id="papelera" hidden>🗑️ Suelta aquí para borrar</div>
 
-  <!-- Ventana de iniciar sesión: correo → enlace en el correo → (si hace falta) elegir qué barras usar -->
+  <!-- Ventana de iniciar sesión: correo → enlace en el correo -->
   <div id="ventana-sesion" hidden>
     <div class="ventana">
       <button class="cerrar-ventana" id="cerrar-ventana" aria-label="Cerrar">✕</button>
@@ -101,14 +101,6 @@
         <p>📬 Revisa tu correo y toca <b>"Sign in"</b>.</p>
         <small>Ábrelo en este mismo dispositivo. Si no llega, mira en la carpeta de spam.</small>
         <button class="boton-texto" id="otro-correo">Usar otro correo</button>
-      </div>
-
-      <!-- Paso 3 (solo si la cuenta ya tenía barras): elegir cuáles se quedan -->
-      <div id="paso-elegir" hidden>
-        <p>Esta cuenta ya tiene barras guardadas en la nube. ¿Cuáles quieres usar?</p>
-        <button id="usar-nube">☁️ Las de la nube</button>
-        <button id="usar-dispositivo">📱 Las de este dispositivo</button>
-        <small>Las que no elijas se reemplazan.</small>
       </div>
 
       <p id="mensaje-sesion"></p>
@@ -155,9 +147,9 @@
 
   <!-- Conecta JavaScript: la librería de Supabase (la nube), la app, y la parte de la nube -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
-  <script src="app.js?v=6"></script>
-  <script src="nube.js?v=6"></script>
-  <script src="recorrido.js?v=6"></script>
-  <script src="informe.js?v=6"></script>
+  <script src="app.js?v=7"></script>
+  <script src="nube.js?v=7"></script>
+  <script src="recorrido.js?v=7"></script>
+  <script src="informe.js?v=7"></script>
 </body>
 </html>

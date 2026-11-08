@@ -2,12 +2,15 @@
 // Sin sesión, la app funciona igual que siempre: todo vive en la libreta (localStorage) de este dispositivo.
 // Con sesión, además se guarda una copia en la nube, para no perder nada y poder verla en otro celular.
 //
-// Cómo se mantienen iguales la libreta y la nube:
-// - Grupos y barras: cada pocos segundos comparo cómo están con lo último que subí; si algo cambió, subo todo.
-// - Historial: cada anotación (y cada Deshacer) entra a una fila de "pendientes" que se sube en orden.
-//   Así, si no hay internet, se guarda para después y no se pierde nada.
-// - Al abrir la app (o volver a ella): si quedaron cambios sin subir, gana este dispositivo y los subo;
-//   si no, gana la nube y bajo lo que haya (por si lo cambié en otro celular).
+// Cómo se mantienen iguales la libreta y la nube (aunque use varios dispositivos):
+// - Grupos y barras: siempre bajo lo de la nube y lo JUNTO con lo de aquí, barra por barra.
+//   Para saber quién cambió qué, guardo cómo quedaron la última vez que estuvieron iguales ("nube-subido"):
+//   si una barra cambió solo aquí, gana la de aquí; si cambió solo allá, gana la de allá;
+//   si cambió en los dos, gana la que se usó más recientemente. Nunca se reemplaza todo de golpe.
+// - Historial: cada anotación (y cada Deshacer) entra a una fila de "pendientes" que se sube en orden
+//   (si no hay internet, se guarda para después). Después bajo el historial de la nube, que trae
+//   lo que anoté en los otros dispositivos.
+// - Sincronizo al abrir la app, al volver a ella, cada vez que cambio algo y cada minuto.
 
 // Dirección del proyecto y llave pública. Esta llave está hecha para ir aquí, a la vista:
 // lo que protege los datos son las reglas de las tablas (ver supabase/tablas.sql).
@@ -17,6 +20,9 @@ const NUBE_LLAVE = "sb_publishable_dOQUWhAi4zBJssqo9OMT7g_4Ur0psWV";
 
 // Cada cuánto reviso si hay algo nuevo que subir (milisegundos)
 const CADA_CUANTO_SUBIR = 5000;
+
+// Cada cuánto traigo lo nuevo de otros dispositivos mientras la app está abierta (milisegundos)
+const CADA_CUANTO_BAJAR = 60000;
 
 // Cuántas filas de historial subo de una vez cuando subo todo el historial
 const FILAS_POR_TANDA = 500;
@@ -113,24 +119,18 @@ async function borrarLasQueNoEsten(tabla, columna, ids) {
   revisar(await consulta);
 }
 
-// Sube grupos y barras si cambiaron desde la última vez (o siempre, si "aunqueNoCambien")
-// También borra en la nube lo que ya no está en la libreta (y el historial de esas barras)
-async function subirTodo(aunqueNoCambien) {
-  const filas = filasLocales();
-  const huella = JSON.stringify(filas);
-  if (!aunqueNoCambien && huella === localStorage.getItem("nube-subido")) return; // Nada nuevo
-
+// Sube estas filas tal cual (grupos y barras) y borra en la nube lo que ya no está en ellas
+// (y el historial de las barras que ya no existen)
+async function subirFilas(filas) {
   revisar(await nube.from("grupos").upsert(filas.grupos));
   revisar(await nube.from("barras").upsert(filas.barras));
   const idsBarras = filas.barras.map(b => b.id);
   await borrarLasQueNoEsten("barras", "id", idsBarras);
   await borrarLasQueNoEsten("historial", "barra_id", idsBarras);
   await borrarLasQueNoEsten("grupos", "id", filas.grupos.map(g => g.id));
-
-  localStorage.setItem("nube-subido", huella); // Anoto cómo quedó la nube
 }
 
-// Sube TODO el historial de la libreta (al enlazar un dispositivo por primera vez)
+// Sube TODO el historial de la libreta (al enlazar un dispositivo, o la primera vez con esta versión)
 // Si alguna fila ya estaba en la nube, se salta
 async function subirHistorialCompleto() {
   const filas = [];
@@ -139,6 +139,10 @@ async function subirHistorialCompleto() {
       filas.push({ user_id: usuario.id, barra_id: actividad.id, hora: hora, antes: antes, despues: despues });
     }
   }
+  await subirFilasDeHistorial(filas);
+}
+
+async function subirFilasDeHistorial(filas) {
   for (let i = 0; i < filas.length; i += FILAS_POR_TANDA) {
     revisar(await nube.from("historial").upsert(filas.slice(i, i + FILAS_POR_TANDA), { ignoreDuplicates: true }));
   }
@@ -153,9 +157,11 @@ function guardarPendientes(pendientes) {
   localStorage.setItem("nube-pendientes", JSON.stringify(pendientes));
 }
 
-// app.js me avisa cada vez que anota algo en el historial
+// app.js me avisa cada vez que anota algo en el historial.
+// Miro solo la marca de la libreta (no si ya cargó la sesión): así no se escapa
+// lo que anote en el primer segundo después de abrir, mientras la sesión todavía está cargando.
 function nubeAnotar(id, fila) {
-  if (!nubeLista()) return;
+  if (localStorage.getItem("nube-lista") !== "si") return;
   const pendientes = leerPendientes();
   pendientes.push({ accion: "anotar", barra: id, hora: fila[0], antes: fila[1], despues: fila[2] });
   guardarPendientes(pendientes);
@@ -163,7 +169,7 @@ function nubeAnotar(id, fila) {
 
 // app.js me avisa cada vez que Deshacer borra algo del historial
 function nubeBorrar(id, hora) {
-  if (!nubeLista()) return;
+  if (localStorage.getItem("nube-lista") !== "si") return;
   const pendientes = leerPendientes();
   pendientes.push({ accion: "borrar", barra: id, hora: hora });
   guardarPendientes(pendientes);
@@ -195,9 +201,22 @@ async function bajarTodo() {
   return { grupos: respuestaGrupos.data, barras: respuestaBarras.data };
 }
 
-// Escribe en la libreta lo que bajé de la nube (después hay que recargar la página para verlo)
+// Trae todo mi historial de la nube (de a 1000 filas, que es lo máximo que entrega de una vez)
+async function bajarHistorial() {
+  const filas = [];
+  for (let desde = 0; ; desde += 1000) {
+    const respuesta = revisar(await nube.from("historial")
+      .select("barra_id, hora, antes, despues")
+      .order("barra_id").order("hora")
+      .range(desde, desde + 999));
+    filas.push(...respuesta.data);
+    if (respuesta.data.length < 1000) return filas;
+  }
+}
+
+// Escribe en la libreta los grupos y barras que quedaron (después hay que recargar la página para verlo)
 function escribirEnLibreta(datos) {
-  // Las barras que ya no están en la nube se borran de la libreta
+  // Las barras que ya no están se borran de la libreta
   for (const actividad of actividades) {
     if (!datos.barras.some(b => b.id === actividad.id)) borrarDatos(actividad.id);
   }
@@ -209,86 +228,180 @@ function escribirEnLibreta(datos) {
   localStorage.setItem("actividades", JSON.stringify(nuevas));
   localStorage.setItem("grupos", JSON.stringify(datos.grupos.map(g => ({ id: g.id, nombre: g.nombre }))));
   for (const b of datos.barras) {
+    // Si la última vez cambió (la llené en otro dispositivo), el Deshacer de aquí ya no aplica
+    if (localStorage.getItem(b.id + "-ultimaVez") !== String(b.ultima_vez)) {
+      localStorage.removeItem(b.id + "-anterior");
+    }
     localStorage.setItem(b.id + "-ultimaVez", b.ultima_vez);
     localStorage.setItem(b.id + "-duracion", b.duracion);
     localStorage.setItem(b.id + "-unidad", b.unidad);
     localStorage.setItem(b.id + "-registro", JSON.stringify(b.rellenos));
-    localStorage.removeItem(b.id + "-anterior"); // El Deshacer de antes ya no aplica
   }
   // Anoto que la nube y la libreta quedaron iguales
   localStorage.setItem("nube-subido", JSON.stringify(filasDeLaNube(datos)));
 }
 
+// ===== JUNTAR LO DE AQUÍ CON LO DE LA NUBE =====
+// Una fila sin su puesto (el orden se junta aparte), para comparar si cambió
+function sinOrden(fila) {
+  const copia = Object.assign({}, fila);
+  delete copia.orden;
+  return JSON.stringify(copia);
+}
+
+// Dos versiones de la misma barra cambiaron: gana la que se usó más recientemente,
+// y los rellenos (para los niveles) se suman sin repetir
+function combinarBarras(aqui, alla) {
+  const ganadora = Number(alla.ultima_vez) > Number(aqui.ultima_vez) ? alla : aqui;
+  const rellenos = Array.from(new Set([...(aqui.rellenos || []), ...(alla.rellenos || [])])).sort((a, b) => a - b);
+  return Object.assign({}, ganadora, { rellenos: rellenos });
+}
+
+// Junta dos listas (grupos o barras) que se identifican por su id.
+// "base" es cómo estaban la última vez que quedaron iguales; si es null (primera vez), no se borra nada:
+// se queda todo lo que haya en cualquiera de los dos lados.
+function juntarLista(base, aqui, alla, combinar) {
+  const mapa = lista => new Map((lista || []).map(fila => [fila.id, fila]));
+  const B = mapa(base), A = mapa(aqui), N = mapa(alla);
+  const juntas = new Map();
+  for (const id of new Set([...A.keys(), ...N.keys()])) {
+    const b = B.get(id), a = A.get(id), n = N.get(id);
+    if (!base || !b) {
+      // Primera vez, o algo nuevo: se queda (y si está en los dos lados, se combinan)
+      juntas.set(id, a && n ? combinar(a, n) : (a || n));
+      continue;
+    }
+    const cambioAqui = !a || sinOrden(a) !== sinOrden(b);
+    const cambioAlla = !n || sinOrden(n) !== sinOrden(b);
+    if (!a) { if (cambioAlla) juntas.set(id, n); continue; }  // La borré aquí (se queda solo si la cambiaron allá)
+    if (!n) { if (cambioAqui) juntas.set(id, a); continue; }  // La borraron allá (se queda solo si la cambié aquí)
+    if (cambioAqui && cambioAlla) juntas.set(id, combinar(a, n));
+    else juntas.set(id, cambioAlla ? n : a);
+  }
+
+  // El orden: si solo cambió allá (o es la primera vez), uso el de allá; si no, el de aquí.
+  // Lo que no esté en ese orden va al final, en el orden del otro lado.
+  const ids = lista => (lista || []).map(fila => fila.id);
+  const ordenCambioAlla = base && JSON.stringify(ids(alla)) !== JSON.stringify(ids(base));
+  const ordenCambioAqui = base && JSON.stringify(ids(aqui)) !== JSON.stringify(ids(base));
+  const usoElDeAlla = !base || (ordenCambioAlla && !ordenCambioAqui);
+  const elegido = usoElDeAlla ? ids(alla) : ids(aqui);
+  const otro = usoElDeAlla ? ids(aqui) : ids(alla);
+  const puesto = id => elegido.includes(id) ? elegido.indexOf(id) : elegido.length + otro.indexOf(id);
+  return Array.from(juntas.values())
+    .sort((x, y) => puesto(x.id) - puesto(y.id))
+    .map((fila, i) => Object.assign({}, fila, { orden: i }));
+}
+
+function juntar(base, aqui, alla) {
+  const juntas = {
+    grupos: juntarLista(base && base.grupos, aqui.grupos, alla.grupos, a => a),
+    barras: juntarLista(base && base.barras, aqui.barras, alla.barras, combinarBarras),
+  };
+  // Satisfacción siempre va primero
+  const principal = juntas.grupos.findIndex(g => g.id === GRUPO_PRINCIPAL.id);
+  if (principal > 0) juntas.grupos.unshift(juntas.grupos.splice(principal, 1)[0]);
+  juntas.grupos.forEach((g, i) => { g.orden = i; });
+  // Si una barra quedó en un grupo que se borró, la mando a Satisfacción
+  for (const barra of juntas.barras) {
+    if (!juntas.grupos.some(g => g.id === barra.grupo_id)) barra.grupo_id = GRUPO_PRINCIPAL.id;
+  }
+  return juntas;
+}
+
+// El historial: queda el de la nube (que ya trae lo de todos los dispositivos),
+// más lo que anoté aquí después de la última vez que bajé y que por alguna razón no subió (ese lo subo)
+async function sincronizarHistorial(idsBarras) {
+  const ultimaBajada = Number(localStorage.getItem("nube-historial-bajado") || 0);
+  const ahora = Date.now();
+  const deLaNube = {};
+  for (const fila of await bajarHistorial()) {
+    (deLaNube[fila.barra_id] = deLaNube[fila.barra_id] || []).push([Number(fila.hora), fila.antes, fila.despues]);
+  }
+  const faltan = [];
+  for (const id of idsBarras) {
+    const enLaNube = deLaNube[id] || [];
+    const horas = new Set(enLaNube.map(fila => fila[0]));
+    const soloAqui = leerHistorial(id).filter(fila => fila[0] > ultimaBajada && !horas.has(fila[0]));
+    for (const [hora, antes, despues] of soloAqui) {
+      faltan.push({ user_id: usuario.id, barra_id: id, hora: hora, antes: antes, despues: despues });
+    }
+    const todo = enLaNube.concat(soloAqui).sort((x, y) => x[0] - y[0]);
+    localStorage.setItem(id + "-historial", JSON.stringify(todo));
+  }
+  await subirFilasDeHistorial(faltan);
+  localStorage.setItem("nube-historial-bajado", ahora);
+}
+
 // ===== SINCRONIZAR =====
-// Al abrir la app o volver a ella: si hay cambios sin subir, los subo; si no, bajo lo de la nube
+// Sube lo pendiente, baja lo de la nube, lo junta con lo de aquí, y sube lo que quedó.
+// Si llegó algo nuevo de otro dispositivo, vuelve a abrir la app para mostrarlo.
 async function sincronizar() {
   if (!nubeLista() || sincronizando) return;
   sincronizando = true;
   try {
     await subirPendientes();
-    const hayCambiosSinSubir = JSON.stringify(filasLocales()) !== localStorage.getItem("nube-subido");
-    if (hayCambiosSinSubir) {
-      await subirTodo();
-    } else {
-      const datos = await bajarTodo();
-      if (JSON.stringify(filasDeLaNube(datos)) !== JSON.stringify(filasLocales())) {
-        escribirEnLibreta(datos);
-        location.reload(); // Algo cambió en otro dispositivo: vuelvo a abrir con lo nuevo
-      }
-    }
+    // La primera vez con esta versión no confío en lo anotado antes: junto sin borrar nada
+    // y subo todo el historial de aquí (por si a la nube le falta algo)
+    const primeraVez = localStorage.getItem("nube-version") !== "2";
+    if (primeraVez) await subirHistorialCompleto();
+    const base = primeraVez ? null : JSON.parse(localStorage.getItem("nube-subido") || "null");
+
+    const aqui = filasLocales();
+    const alla = filasDeLaNube(await bajarTodo());
+    const juntas = juntar(base, aqui, alla);
+    if (JSON.stringify(juntas) !== JSON.stringify(alla)) await subirFilas(juntas);
+
+    const cambiaAqui = JSON.stringify(juntas) !== JSON.stringify(aqui);
+    if (cambiaAqui) escribirEnLibreta(juntas);
+    else localStorage.setItem("nube-subido", JSON.stringify(juntas));
+
+    await sincronizarHistorial(juntas.barras.map(b => b.id));
+    localStorage.setItem("nube-version", "2");
+    if (cambiaAqui) location.reload(); // Algo cambió en otro dispositivo: vuelvo a abrir con lo nuevo
   } catch (error) {
     console.warn("No se pudo sincronizar (se intenta otra vez después):", error.message);
   }
   sincronizando = false;
 }
 
-// Cada pocos segundos: subo lo que haya cambiado (sin bajar nada)
-async function subirSiCambio() {
-  if (!nubeLista() || sincronizando) return;
-  sincronizando = true;
-  try {
-    await subirPendientes();
-    await subirTodo();
-  } catch (error) {
-    console.warn("No se pudo subir (se intenta otra vez después):", error.message);
-  }
-  sincronizando = false;
+// Dice si estoy en medio de algo (arrastrando, escribiendo, con un menú o el informe abierto),
+// para no recargar la página encima
+function estoyOcupado() {
+  const activo = document.activeElement;
+  return document.querySelector(".levantada, .agarrada") !== null
+    || (activo !== null && ["INPUT", "SELECT", "TEXTAREA"].includes(activo.tagName))
+    || Array.from(document.querySelectorAll(".ajustes, [id^='opciones-']")).some(caja => !caja.hidden)
+    || !document.getElementById("menu-principal").hidden
+    || !document.getElementById("informe").hidden
+    || !document.getElementById("recorrido").hidden;
+}
+
+// Cada pocos segundos: si cambié algo aquí, sincronizo
+function sincronizarSiCambio() {
+  if (!nubeLista()) return;
+  const cambie = leerPendientes().length > 0
+    || JSON.stringify(filasLocales()) !== localStorage.getItem("nube-subido");
+  if (cambie) sincronizar();
 }
 
 // ===== ENLAZAR ESTE DISPOSITIVO CON LA CUENTA =====
-// Justo después de entrar: si la cuenta está vacía, subo lo de este dispositivo.
-// Si ya tenía barras, pregunto cuáles usar (salvo que este dispositivo nunca haya tocado sus barras).
+// Justo después de entrar. Si este dispositivo es nuevo (nunca tocó sus barras) y la nube ya tiene,
+// tomo las de la nube. Si no, junto las de aquí con las de la nube, sin borrar ninguna.
 async function enlazarDispositivo() {
+  localStorage.removeItem("nube-subido");
+  localStorage.removeItem("nube-version");
+  localStorage.removeItem("nube-historial-bajado");
+  guardarPendientes([]);
   const conteo = revisar(await nube.from("barras").select("id", { count: "exact", head: true }));
-  if (conteo.count === 0) {
-    await usarLasDelDispositivo();
-  } else if (localStorage.getItem("actividades") === null) {
-    await usarLasDeLaNube(); // Dispositivo nuevo, sin cambios propios: no hay nada que preguntar
-  } else {
-    abrirVentana();
-    mostrarPaso("paso-elegir");
+  if (conteo.count > 0 && localStorage.getItem("actividades") === null) {
+    escribirEnLibreta(await bajarTodo());
+    localStorage.setItem("nube-lista", "si");
+    location.reload(); // Al abrir otra vez, sincronizar() baja también el historial
+    return;
   }
-}
-
-// Gana la nube: bajo todo y vuelvo a abrir la app con eso
-async function usarLasDeLaNube() {
-  const datos = await bajarTodo();
-  escribirEnLibreta(datos);
-  guardarPendientes([]);
   localStorage.setItem("nube-lista", "si");
-  location.reload();
-}
-
-// Gana este dispositivo: borro lo de la nube y subo todo lo de aquí, historial incluido
-async function usarLasDelDispositivo() {
-  for (const tabla of ["historial", "barras", "grupos"]) {
-    revisar(await nube.from(tabla).delete().eq("user_id", usuario.id));
-  }
-  await subirTodo(true);
-  await subirHistorialCompleto();
-  guardarPendientes([]);
-  localStorage.setItem("nube-lista", "si");
-  cerrarVentana();
+  await sincronizar();
 }
 
 // ===== VENTANA DE INICIAR SESIÓN =====
@@ -303,12 +416,10 @@ function cerrarVentana() {
 
 // Muestra solo uno de los pasos de la ventana y borra el mensaje de abajo
 function mostrarPaso(paso) {
-  for (const id of ["paso-correo", "paso-enlace", "paso-elegir"]) {
+  for (const id of ["paso-correo", "paso-enlace"]) {
     document.getElementById(id).hidden = id !== paso;
   }
   avisar("");
-  // Mientras se elige qué barras usar, no se puede cerrar la ventana (hay que escoger)
-  document.getElementById("cerrar-ventana").hidden = paso === "paso-elegir";
 }
 
 // Escribe un mensaje debajo de la ventana
@@ -342,7 +453,7 @@ function pintarSesion() {
 async function cerrarSesion() {
   if (!confirm("¿Cerrar sesión? Tus barras se quedan en este dispositivo, pero dejan de guardarse en la nube.")) return;
   await nube.auth.signOut();
-  for (const clave of ["nube-lista", "nube-subido", "nube-pendientes"]) {
+  for (const clave of ["nube-lista", "nube-subido", "nube-pendientes", "nube-version", "nube-historial-bajado"]) {
     localStorage.removeItem(clave);
   }
 }
@@ -389,25 +500,6 @@ if (nube) {
     mostrarPaso("paso-correo");
   };
 
-  // Paso 3: elegir qué barras usar
-  document.getElementById("usar-nube").onclick = async function () {
-    avisar("Bajando tus barras…");
-    try {
-      await usarLasDeLaNube();
-    } catch (error) {
-      avisar(explicarError(error));
-    }
-  };
-  document.getElementById("usar-dispositivo").onclick = async function () {
-    if (!confirm("¿Seguro? Las barras que estaban en la nube se reemplazan por las de este dispositivo.")) return;
-    avisar("Subiendo tus barras…");
-    try {
-      await usarLasDelDispositivo();
-    } catch (error) {
-      avisar(explicarError(error));
-    }
-  };
-
   // Cuando la sesión empieza o termina, acomodo el menú
   nube.auth.onAuthStateChange(function (evento, sesion) {
     usuario = sesion ? sesion.user : null;
@@ -442,8 +534,12 @@ if (nube) {
     if (document.visibilityState === "visible") sincronizar();
   });
 
-  // Y cada pocos segundos subo lo que haya cambiado
-  setInterval(subirSiCambio, CADA_CUANTO_SUBIR);
+  // Cada pocos segundos subo lo que haya cambiado aquí...
+  setInterval(sincronizarSiCambio, CADA_CUANTO_SUBIR);
+  // ...y cada minuto, si la app está a la vista y no estoy en medio de algo, traigo lo de otros dispositivos
+  setInterval(function () {
+    if (document.visibilityState === "visible" && !estoyOcupado()) sincronizar();
+  }, CADA_CUANTO_BAJAR);
 } else {
   pintarSesion();
 }
