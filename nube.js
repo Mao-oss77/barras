@@ -350,21 +350,26 @@ async function sincronizarXP() {
   guardarPendientesXP(leerPendientesXP().filter(id => !subir.has(id)));
   localStorage.setItem("nube-xp", "si");
 
-  // Bajo todos (de a 1000) y agrego los que no tenía (los de otros dispositivos)
-  const porId = new Map(leerMovimientos().map(m => [m.id, m]));
+  // Bajo todos (de a 1000)
+  const deLaNube = [];
   for (let desde = 0; ; desde += 1000) {
     const respuesta = revisar(await nube.from("xp")
       .select("id, hora, cantidad, motivo, barra_id")
       .order("hora").order("id")
       .range(desde, desde + 999));
-    for (const f of respuesta.data) {
-      if (!porId.has(f.id)) {
-        porId.set(f.id, { id: f.id, hora: Number(f.hora), cantidad: f.cantidad, motivo: f.motivo, barra: f.barra_id });
-      }
-    }
+    deLaNube.push(...respuesta.data);
     if (respuesta.data.length < 1000) break;
   }
-  guardarMovimientos(Array.from(porId.values()).sort((a, b) => a.hora - b.hora));
+  // Y agrego los que no tenía (los de otros dispositivos) a la lista de AHORA, no a una de antes de ir
+  // a internet: si mientras tanto gané XP aquí, ese movimiento se queda
+  const movimientos = leerMovimientos();
+  const tengo = new Set(movimientos.map(m => m.id));
+  for (const f of deLaNube) {
+    if (!tengo.has(f.id)) {
+      movimientos.push({ id: f.id, hora: Number(f.hora), cantidad: f.cantidad, motivo: f.motivo, barra: f.barra_id });
+    }
+  }
+  guardarMovimientos(movimientos.sort((a, b) => a.hora - b.hora));
   pintarSaldo();
 }
 
@@ -385,11 +390,7 @@ async function sincronizar() {
     const aqui = filasLocales();
     const alla = filasDeLaNube(await bajarTodo());
     const juntas = juntar(base, aqui, alla);
-    if (JSON.stringify(juntas) !== JSON.stringify(alla)) await subirFilas(juntas);
-
-    const cambiaAqui = JSON.stringify(juntas) !== JSON.stringify(aqui);
-    if (cambiaAqui) escribirEnLibreta(juntas);
-    else localStorage.setItem("nube-subido", JSON.stringify(juntas));
+    if (JSON.stringify(juntas) !== JSON.stringify(alla)) await subirFilas(juntas); // Ahora la nube tiene "juntas"
 
     await sincronizarHistorial(juntas.barras.map(b => b.id));
     localStorage.setItem("nube-version", "2");
@@ -399,7 +400,19 @@ async function sincronizar() {
     } catch (error) {
       console.warn("No se pudo sincronizar el XP (se intenta otra vez después):", error.message);
     }
-    if (cambiaAqui) location.reload(); // Algo cambió en otro dispositivo: vuelvo a abrir con lo nuevo
+
+    // Mientras iba y volvía de internet pude haber movido barras aquí. Lo de ahora gana sobre
+    // la foto que tomé al empezar ("aqui"), y lo que llegó de otros dispositivos también se queda.
+    const ahora = filasLocales();
+    const final = JSON.stringify(ahora) === JSON.stringify(aqui) ? juntas : juntar(aqui, ahora, juntas);
+    if (JSON.stringify(final) !== JSON.stringify(ahora)) {
+      escribirEnLibreta(final);
+      // La nube quedó con "juntas": si "final" trae cambios míos de último momento, se suben en la próxima vuelta
+      localStorage.setItem("nube-subido", JSON.stringify(juntas));
+      location.reload(); // Algo cambió en otro dispositivo: vuelvo a abrir con lo nuevo
+    } else {
+      localStorage.setItem("nube-subido", JSON.stringify(juntas));
+    }
   } catch (error) {
     console.warn("No se pudo sincronizar (se intenta otra vez después):", error.message);
   }

@@ -60,13 +60,15 @@ function saldoXP() {
   return leerMovimientos().reduce((suma, m) => suma + m.cantidad, 0);
 }
 
-// Lo que gané hoy llenando barras (lo devuelto con Deshacer o al bajar a mano se descuenta)
+// Lo que gané hoy llenando barras (lo devuelto con Deshacer o al bajar a mano se descuenta).
+// Nunca baja de 0: devolver hoy XP que gané ayer no debe agrandar el tope de hoy.
 function ganadoHoy() {
   const hoy = new Date().toDateString();
   const deBarras = ["barra", "deshacer", "devuelto"];
-  return leerMovimientos()
+  const suma = leerMovimientos()
     .filter(m => deBarras.includes(m.motivo) && new Date(m.hora).toDateString() === hoy)
-    .reduce((suma, m) => suma + m.cantidad, 0);
+    .reduce((total, m) => total + m.cantidad, 0);
+  return Math.max(0, suma);
 }
 
 // ===== EL TECHO (BAJAR A MANO Y VOLVER A SUBIR) =====
