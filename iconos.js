@@ -29,6 +29,7 @@ const ICONOS = {
   mas:          '<path d="M12 5v14M5 12h14"/>',
   ajustes:      '<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>',
   arrastrar:    '<path d="M12 4v16M8 8l4-4 4 4M8 16l4 4 4-4"/>',
+  mover:        '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 13h7M13.5 10.5L16 13l-2.5 2.5"/>',
   corazon:      '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.7A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>',
 };
 

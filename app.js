@@ -22,24 +22,18 @@ const DISTANCIA_MOUSE = 6;
 // El tipo dice cómo se llena una barra:
 // "clic":     un clic la llena entera
 // "arrastre": la arrastro hasta el nivel que yo quiera
-// "niveles":  un clic la llena, y además cuenta los rellenos para subir de nivel
+// "niveles":  la de Desarrollo: se llena arrastrando y muestra el contador de días
+//             (se llama "niveles" por dentro porque así se llamaba antes; así la nube no tiene que cambiar)
 const TIPOS = {
   clic:     "Un clic",
   arrastre: "Arrastrando",
-  niveles:  "Con niveles",
+  niveles:  "Arrastrando, con contador de días",
 };
 
-// ===== BARRAS CON NIVELES =====
-// Se vacían igual que las demás, pero además cuentan cuántas veces las he llenado y con eso suben de nivel
-const RELLENOS_NIVEL_1 = 5;  // Rellenos para pasar el nivel 1; cada nivel pide 5 más (5, 10, 15...)
-
-// Para que un relleno cuente, la barra tiene que haber bajado al menos un cuarto (estar en 75% o menos).
-// Si la relleno estando más arriba, se toma como la misma sesión de trabajo: se llena, pero no suma.
-const UMBRAL_RELLENO = 75;
-
-// Color de la etiqueta de nivel (del nivel 5 en adelante se queda el último)
-//                     bronce     plata      oro        diamante   maestro
-const COLORES_NIVEL = ["#cd7f32", "#a8a9ad", "#f2c200", "#4fc3f7", "#9b59b6"];
+// Dice si una barra de ese tipo se llena arrastrando
+function seArrastra(tipo) {
+  return tipo === "arrastre" || tipo === "niveles";
+}
 
 // ===== BARRAS PREESTABLECIDAS (SOLO EN SATISFACCIÓN) =====
 // Barras listas para agregar con un solo toque desde la tarjeta de "Nueva barra".
@@ -210,74 +204,36 @@ function borrarUltimoHistorial(id) {
   if (fila && typeof nubeBorrar === "function") nubeBorrar(id, fila[0]);
 }
 
-// ===== REGISTRO DE RELLENOS (SOLO BARRAS CON NIVELES) =====
-// Cada vez que lleno una barra con niveles, anoto la fecha y hora en una lista.
-// Con esa lista sé cuántas veces la he llenado hoy, este mes y en total.
-// (Esta lista también servirá después para el informe mensual)
-
-// Lee la lista de rellenos de una barra
+// ===== REGISTRO DE RELLENOS (DE LAS BARRAS CON NIVELES DE ANTES) =====
+// Antes, las barras con niveles anotaban aquí la hora de cada relleno. Ya no se anota nada nuevo
+// (ahora todo queda en el historial), pero se guarda para que el contador de días no pierda esos días.
 function leerRegistro(id) {
   return JSON.parse(localStorage.getItem(id + "-registro") || "[]");
 }
 
-// Anota un relleno nuevo con la hora de ahora
-// y deja una marca para que Deshacer sepa que tiene que borrarlo
-function anotarRelleno(id) {
-  const registro = leerRegistro(id);
-  registro.push(Date.now());
-  localStorage.setItem(id + "-registro", JSON.stringify(registro));
-  localStorage.setItem(id + "-contoRelleno", "si");
-}
-
-// Borra el último relleno anotado (lo usa Deshacer)
-function borrarUltimoRelleno(id) {
-  const registro = leerRegistro(id);
-  registro.pop(); // Quita el último de la lista
-  localStorage.setItem(id + "-registro", JSON.stringify(registro));
-  localStorage.removeItem(id + "-contoRelleno");
-}
-
-// Cuenta los rellenos de hoy, de este mes y de siempre
-function contarRellenos(id) {
-  const registro = leerRegistro(id);
-  const ahora = new Date();
-  const inicioDia = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate()).getTime();
-  const inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1).getTime();
-  return {
-    total: registro.length,
-    hoy: registro.filter(hora => hora >= inicioDia).length,
-    mes: registro.filter(hora => hora >= inicioMes).length,
-  };
-}
-
-// Convierte los rellenos totales en nivel, rellenos del nivel actual y meta
-// Ej: 8 rellenos = nivel 2 (gastó 5 en el nivel 1) con 3 de 10
-function calcularNivel(rellenosTotales) {
-  let nivel = 1;
-  let rellenos = rellenosTotales;
-  let meta = RELLENOS_NIVEL_1;
-  while (rellenos >= meta) {       // Mientras alcance para pasar de nivel...
-    rellenos = rellenos - meta;    // ...gasta los rellenos de ese nivel
-    nivel = nivel + 1;             // ...sube uno
-    meta = RELLENOS_NIVEL_1 * nivel; // ...y el siguiente pide más
+// ===== CONTADOR DE DÍAS (BARRAS DE DESARROLLO) =====
+// Cuántos días distintos he subido esta barra, poco o mucho. Varias veces el mismo día cuentan como 1.
+// Sale del historial (cada vez que subió) y de los rellenos de antes. No se vacía con el tiempo.
+function contarDias(id) {
+  const dias = new Set();
+  const dia = hora => new Date(hora).toDateString(); // El mismo texto para todo un día
+  for (const [hora, antes, despues] of leerHistorial(id)) {
+    if (despues > antes) dias.add(dia(hora));
   }
-  return { nivel: nivel, rellenos: rellenos, meta: meta };
+  for (const hora of leerRegistro(id)) {
+    if (hora > 0) dias.add(dia(hora)); // Los de hora 0 son puntos mudados de una versión vieja, sin fecha
+  }
+  return dias.size;
 }
 
 // ===== FUNCIONES DE BOTONES =====
 // Recarga la barra, anotando antes la hora vieja por si me equivoqué, y la anota en el historial
 // (aunque ya estuviera llena: si oprimí el botón, es que lo hice otra vez)
-// Si es con niveles, además cuenta un relleno (solo si la barra ya había bajado un cuarto)
 function recargar(id) {
   const nivelAntes = calcularPorcentaje(id);
   localStorage.setItem(id + "-anterior", leerUltimaVez(id));
   localStorage.setItem(id + "-ultimaVez", Date.now());
   anotarHistorial(id, nivelAntes, 100);
-  if (tipoDe(id) === "niveles" && nivelAntes <= UMBRAL_RELLENO) {
-    anotarRelleno(id);
-  } else {
-    localStorage.removeItem(id + "-contoRelleno"); // Misma sesión (o no es con niveles): no suma
-  }
   actualizarBarra(id);
   // Saltito de alegría (estilos.css)
   const barra = document.getElementById("barra-" + id);
@@ -288,7 +244,7 @@ function recargar(id) {
 }
 
 // Deshace la última recarga de esta actividad
-// (y si esa recarga había quedado en el historial o había contado un relleno, también los borra)
+// (y si esa recarga había quedado en el historial, también la borra de ahí)
 function deshacer(id) {
   const anterior = localStorage.getItem(id + "-anterior");
   if (anterior === null) return;
@@ -296,9 +252,6 @@ function deshacer(id) {
   localStorage.removeItem(id + "-anterior");
   if (localStorage.getItem(id + "-anotoHistorial") !== null) {
     borrarUltimoHistorial(id);
-  }
-  if (localStorage.getItem(id + "-contoRelleno") !== null) {
-    borrarUltimoRelleno(id);
   }
   actualizarBarra(id);
 }
@@ -342,7 +295,6 @@ function conectarArrastre(id) {
     if (navigator.vibrate) navigator.vibrate(30); // Vibra cortico (si el celular puede)
     nivelAntes = calcularPorcentaje(id);
     localStorage.setItem(id + "-anterior", leerUltimaVez(id));
-    localStorage.removeItem(id + "-contoRelleno");   // Arrastrar nunca cuenta rellenos
     localStorage.removeItem(id + "-anotoHistorial"); // Lo anoto al soltar, si cambió algo
     ponerNivel(id, nivelDesdeAltura(ultimoY));
   }
@@ -363,7 +315,7 @@ function conectarArrastre(id) {
 
   // Al tocar la barra
   barra.onpointerdown = function (evento) {
-    if (tipoDe(id) !== "arrastre") return;
+    if (!seArrastra(tipoDe(id))) return;
     inicioY = evento.clientY;
     ultimoY = evento.clientY;
     if (evento.pointerType === "mouse") {   // PC: arrastra de una
@@ -399,7 +351,7 @@ function conectarArrastre(id) {
 
   // Que al mantener hundido no salga el menú del navegador
   barra.oncontextmenu = function (evento) {
-    if (tipoDe(id) === "arrastre") evento.preventDefault();
+    if (seArrastra(tipoDe(id))) evento.preventDefault();
   };
 }
 
@@ -652,7 +604,7 @@ function borrarGrupo(id) {
 
 // ===== FUNCIONES DE PANTALLA =====
 // Pinta UNA barra: altura y color según qué tan llena está
-// Si es con niveles, además escribe el nivel y cuántas veces la he llenado
+// Si es de Desarrollo (niveles), además escribe el contador de días
 function actualizarBarra(id) {
   const relleno = document.getElementById("relleno-" + id);
   const porcentaje = calcularPorcentaje(id);
@@ -668,24 +620,19 @@ function actualizarBarra(id) {
   }
 
   if (tipoDe(id) === "niveles") {
-    const conteo = contarRellenos(id);
-    const n = calcularNivel(conteo.total);
-    const etiqueta = document.getElementById("nivel-" + id);
-    etiqueta.textContent = "Nivel " + n.nivel + " · " + n.rellenos + "/" + n.meta;
-    etiqueta.style.background = COLORES_NIVEL[Math.min(n.nivel, COLORES_NIVEL.length) - 1];
-    document.getElementById("conteo-" + id).textContent = "Hoy " + conteo.hoy + " · Mes " + conteo.mes;
+    const dias = contarDias(id);
+    document.getElementById("dias-" + id).textContent = dias + (dias === 1 ? " día" : " días");
   }
 }
 
 // Muestra lo que corresponde según el tipo de la barra:
-// clic = botón de llenar; arrastre = barra arrastrable con su pista; niveles = botón, nivel y conteo
+// clic = botón de llenar; arrastre = barra arrastrable con su pista; niveles = arrastrable y contador de días
 function aplicarTipo(id) {
   const tipo = tipoDe(id);
-  document.getElementById("barra-" + id).classList.toggle("manual", tipo === "arrastre");
-  document.getElementById("boton-" + id).hidden = tipo === "arrastre";
-  document.getElementById("pista-" + id).hidden = tipo !== "arrastre";
-  document.getElementById("nivel-" + id).hidden = tipo !== "niveles";
-  document.getElementById("conteo-" + id).hidden = tipo !== "niveles";
+  document.getElementById("barra-" + id).classList.toggle("manual", seArrastra(tipo));
+  document.getElementById("boton-" + id).hidden = seArrastra(tipo);
+  document.getElementById("pista-" + id).hidden = !seArrastra(tipo);
+  document.getElementById("dias-" + id).hidden = tipo !== "niveles";
 }
 
 // Pinta TODAS las barras
@@ -710,15 +657,16 @@ function crearBarra(actividad) {
         <div class="relleno" id="relleno-${actividad.id}"></div>
       </div>
       <p id="nombre-${actividad.id}"></p>
-      <small class="nivel" id="nivel-${actividad.id}" hidden></small>
-      <small class="conteo" id="conteo-${actividad.id}" hidden></small>
+      <small class="dias" id="dias-${actividad.id}" hidden></small>
       <small class="pista" id="pista-${actividad.id}" hidden>${icono("arrastrar")} Mantén y arrastra</small>
       <button id="boton-${actividad.id}"></button>
       <button class="boton-menu" id="menu-${actividad.id}" aria-label="Más opciones">${icono("puntos")}</button>
       <div id="opciones-${actividad.id}" hidden>
         <button id="deshacer-${actividad.id}">Deshacer</button>
         <button id="ajustes-${actividad.id}">${icono("ajustes")} Ajustes</button>
+        <button id="mover-${actividad.id}">${icono("mover")} Mover a…</button>
       </div>
+      <div class="ajustes" id="destinos-${actividad.id}" hidden></div>
       <div class="ajustes" id="caja-${actividad.id}" hidden>
         <small>Se vacía en:</small>
         <input type="number" id="cantidad-${actividad.id}" min="1">
@@ -744,7 +692,7 @@ function crearBarra(actividad) {
     quitarActividad(actividad.id);
   };
 
-  // Conecta el botón de recargar (si es con niveles, también cuenta el relleno)
+  // Conecta el botón de recargar
   document.getElementById("boton-" + actividad.id).onclick = function () {
     recargar(actividad.id);
   };
@@ -761,14 +709,24 @@ function crearBarra(actividad) {
     document.getElementById("opciones-" + actividad.id).hidden = true; // Cierra el menú
   };
 
+  // Conecta el botón que muestra a qué grupos se puede mover
+  document.getElementById("mover-" + actividad.id).onclick = function () {
+    document.getElementById("opciones-" + actividad.id).hidden = true; // Cierra el menú
+    mostrarDestinos(actividad.id);
+  };
+
   // Conecta el botón ⋮ de la esquina
   document.getElementById("menu-" + actividad.id).onclick = function () {
     const opciones = document.getElementById("opciones-" + actividad.id);
     const caja = document.getElementById("caja-" + actividad.id);
-    if (!caja.hidden) {       // Si los ajustes están abiertos, el ⋮ los cierra
+    const destinos = document.getElementById("destinos-" + actividad.id);
+    if (!caja.hidden || !destinos.hidden) { // Si los ajustes o los grupos están abiertos, el ⋮ los cierra
       caja.hidden = true;
+      destinos.hidden = true;
       return;
     }
+    // "Mover a…" solo sale si hay otro grupo a donde llevarla
+    document.getElementById("mover-" + actividad.id).hidden = grupos.length < 2;
     opciones.hidden = !opciones.hidden; // Si no, abre o cierra el menú
   };
 
@@ -790,6 +748,63 @@ function crearBarra(actividad) {
 
   // Si no es del grupo que estoy viendo, la escondo
   document.getElementById("necesidad-" + actividad.id).hidden = actividad.grupo !== grupoActual;
+}
+
+// ===== MOVER UNA BARRA A OTRO GRUPO =====
+// Muestra, dentro de la tarjeta, un botón por cada uno de los otros grupos
+function mostrarDestinos(id) {
+  const destinos = document.getElementById("destinos-" + id);
+  destinos.innerHTML = "<small>Mover a:</small>";
+  const actual = actividades.find(a => a.id === id).grupo;
+  for (const grupo of grupos) {
+    if (grupo.id === actual) continue;
+    const boton = document.createElement("button");
+    boton.textContent = grupo.nombre; // Como texto puro, por si el nombre trae algo raro
+    boton.onclick = function () {
+      destinos.hidden = true;
+      moverBarra(id, grupo.id);
+    };
+    destinos.append(boton);
+  }
+  const cancelar = document.createElement("button");
+  cancelar.className = "boton-cancelar";
+  cancelar.textContent = "Cancelar";
+  cancelar.onclick = function () {
+    destinos.hidden = true;
+  };
+  destinos.append(cancelar);
+  destinos.hidden = false;
+}
+
+// Pasa la barra a otro grupo. Es la misma barra (mismo id), así que conserva
+// nivel, duración, historial y contadores; solo cambia su grupo. Queda de última en el grupo nuevo.
+function moverBarra(id, grupoId) {
+  const puesto = actividades.findIndex(a => a.id === id);
+  const [actividad] = actividades.splice(puesto, 1);
+  actividad.grupo = grupoId;
+  actividades.push(actividad);
+  guardarActividades(); // nube.js nota el cambio y lo sube solo
+
+  // La tarjeta se va al final (antes de "Nueva barra") y se esconde, porque ya no es de este grupo
+  const tarjeta = document.getElementById("necesidad-" + id);
+  document.getElementById("tarjeta-agregar").before(tarjeta);
+  tarjeta.hidden = actividad.grupo !== grupoActual;
+
+  const destino = grupos.find(g => g.id === grupoId);
+  mostrarAviso(actividad.nombre + " se movió a " + destino.nombre);
+}
+
+// Aviso cortico abajo de la pantalla, que se va solo
+function mostrarAviso(texto) {
+  const aviso = document.getElementById("aviso");
+  aviso.textContent = texto;
+  aviso.hidden = false;
+  aviso.classList.remove("saliendo");
+  clearTimeout(mostrarAviso.espera);
+  mostrarAviso.espera = setTimeout(function () {
+    aviso.classList.add("saliendo"); // Se desvanece (estilos.css)...
+    mostrarAviso.espera = setTimeout(() => { aviso.hidden = true; }, 400); // ...y después se esconde
+  }, 2500);
 }
 
 // Fabrica un botón de pestaña por cada grupo, más el "+" para crear uno nuevo
@@ -865,6 +880,10 @@ function mostrarGrupo(id) {
   pintarPestanas();
   // Las preestablecidas solo salen en Satisfacción
   document.getElementById("preestablecidas").hidden = id !== GRUPO_PRINCIPAL.id;
+  // En Desarrollo, una barra nueva arranca siendo de Desarrollo (arrastrar + contador de días)
+  const tipoNuevo = document.getElementById("nuevo-tipo");
+  tipoNuevo.value = id === "desarrollo" ? "niveles" : "clic";
+  document.getElementById("campo-boton").hidden = seArrastra(tipoNuevo.value);
   // Satisfacción no se puede renombrar ni borrar
   document.getElementById("renombrar-grupo").disabled = id === GRUPO_PRINCIPAL.id;
   document.getElementById("borrar-grupo").disabled = id === GRUPO_PRINCIPAL.id;
@@ -921,6 +940,22 @@ if (actividades.some(a => !a.grupo)) {
   guardarActividades();
 }
 
+// ===== MUDANZA: DESARROLLO EN UN SOLO TIPO =====
+// Las barras del grupo Desarrollo pasan todas al tipo de Desarrollo (arrastrar + contador de días).
+// Es la misma barra: no pierde nivel, duración, historial ni rellenos. Se hace una sola vez por dispositivo,
+// así si después alguien pone una barra de un clic en Desarrollo, se respeta.
+if (localStorage.getItem("mudanza-desarrollo") === null) {
+  let cambio = false;
+  for (const actividad of actividades) {
+    if (actividad.grupo === "desarrollo" && actividad.tipo !== "niveles") {
+      actividad.tipo = "niveles";
+      cambio = true;
+    }
+  }
+  if (cambio) guardarActividades();
+  localStorage.setItem("mudanza-desarrollo", "si");
+}
+
 // Por si acaso: Satisfacción siempre existe, y una barra sin grupo conocido se va a Satisfacción
 if (!grupos.some(g => g.id === GRUPO_PRINCIPAL.id)) {
   grupos.unshift(GRUPO_PRINCIPAL);
@@ -941,7 +976,7 @@ for (const actividad of actividades) {
 const selectorNuevoTipo = document.getElementById("nuevo-tipo");
 selectorNuevoTipo.innerHTML = opcionesDeTipo();
 selectorNuevoTipo.onchange = function () {
-  document.getElementById("campo-boton").hidden = selectorNuevoTipo.value === "arrastre";
+  document.getElementById("campo-boton").hidden = seArrastra(selectorNuevoTipo.value);
 };
 
 // Conecta el botón que abre la cajita de "Nueva barra"

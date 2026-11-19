@@ -22,11 +22,11 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <!-- "media=print" y luego "all": así la letra se descarga sin hacer esperar a la página -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800&display=swap" media="print" onload="this.media='all'">
-  <link rel="stylesheet" href="estilos.css?v=13">
+  <link rel="stylesheet" href="estilos.css?v=15">
   <!-- Los íconos de línea (los demás archivos los usan) -->
-  <script src="iconos.js?v=13"></script>
+  <script src="iconos.js?v=15"></script>
   <!-- Pone el color y el fondo elegidos antes de pintar la página -->
-  <script src="tema.js?v=13"></script>
+  <script src="tema.js?v=15"></script>
 </head>
 
 <!-- ===== CUERPO: todo lo que SÍ se ve en la página ===== -->
@@ -87,6 +87,9 @@
   </div>
 
   <!-- Papelera: aparece abajo solo mientras llevo una tarjeta o una pestaña -->
+  <!-- Aviso cortico abajo (por ejemplo, "Series se movió a Desarrollo"); lo maneja app.js -->
+  <div id="aviso" role="status" hidden></div>
+
   <div id="papelera" hidden><span data-icono="borrar"></span> Suelta aquí para borrar</div>
 
   <!-- Ventana de iniciar sesión: correo → enlace en el correo -->
@@ -180,9 +183,9 @@
   <!-- La librería de la nube y nube.js llevan "defer": se descargan sin frenar nada y corren al final,
        así las barras se dibujan de una vez con lo que ya está guardado en el celular -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js" defer></script>
-  <script src="app.js?v=13"></script>
-  <script src="nube.js?v=13" defer></script>
-  <script src="recorrido.js?v=13"></script>
-  <script src="informe.js?v=13"></script>
+  <script src="app.js?v=15"></script>
+  <script src="nube.js?v=15" defer></script>
+  <script src="recorrido.js?v=15"></script>
+  <script src="informe.js?v=15"></script>
 </body>
 </html>
