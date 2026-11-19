@@ -9,10 +9,11 @@
 //
 // Reglas:
 // - Al 100 % la barra no da más (no hay nada que subir).
-// - Si bajo una barra a mano, se devuelve el XP de su última llenada, en proporción a lo que bajé
-//   (si me equivoqué de barra y la corrijo bajándola, no me quedo con XP de más).
-// - Lo que bajé a mano y que NO venía de esa última llenada (XP de antes, que ya no se devuelve)
-//   queda como "techo": volver a subir hasta ahí no da XP de nuevo. El techo también se vacía con el tiempo.
+// - Si bajo una barra a mano, se devuelve el XP que tenía adentro en la parte que bajé, aunque la haya
+//   llenado por partes (si me equivoqué de barra y la corrijo bajándola, no me quedo con XP de más).
+//   Subir y bajar una barra siempre me deja donde empecé.
+// - Lo que bajé a mano y que no sé de qué llenada venía (de antes de esta regla) queda como "techo":
+//   volver a subir hasta ahí no da XP de nuevo. El techo también se vacía con el tiempo.
 // - Tope de 500 XP al día sumando toda la app.
 // - 300 XP de bienvenida.
 
@@ -88,20 +89,19 @@ function marcarTecho(id, antes) {
   localStorage.setItem(id + "-techo", Math.round(hora));
 }
 
-// ===== LA ÚLTIMA LLENADA =====
-// De cada barra recuerdo su última llenada: cuánto XP dio y de qué parte de la barra vino
-// (de qué nivel a qué nivel, y cuándo). Así sé cuánto devolver si la bajo a mano o la deshago.
-function leerUltimaLlenada(id) {
-  const guardado = localStorage.getItem(id + "-xpUltimo");
-  if (guardado === null) return null;
-  const llenada = JSON.parse(guardado);
-  // Las de la versión anterior solo guardaban el número: sirven para Deshacer, no para bajar a mano
-  return typeof llenada === "number" ? { xp: llenada, desde: null, hasta: null, hora: 0 } : llenada;
+// ===== LAS LLENADAS QUE TIENE ADENTRO =====
+// De cada barra recuerdo sus llenadas que todavía no se han vaciado: cuánto XP dio cada una
+// y de qué parte de la barra vino (de qué nivel a qué nivel, y cuándo).
+// Así, si la bajo a mano, sé cuánto devolver aunque la haya llenado por partes.
+function leerLlenadas(id) {
+  return JSON.parse(localStorage.getItem(id + "-xpLlenadas") || "[]");
 }
 
-function guardarUltimaLlenada(id, llenada) {
-  if (!llenada || llenada.xp <= 0) localStorage.removeItem(id + "-xpUltimo");
-  else localStorage.setItem(id + "-xpUltimo", JSON.stringify(llenada));
+// Guarda la lista, olvidando las que ya se vaciaron solas con el tiempo
+function guardarLlenadas(id, llenadas) {
+  const vivas = llenadas.filter(l => l.xp > 0 && (l.desde === null || l.hasta - bajadaDesde(id, l.hora) > 0));
+  if (vivas.length === 0) localStorage.removeItem(id + "-xpLlenadas");
+  else localStorage.setItem(id + "-xpLlenadas", JSON.stringify(vivas));
 }
 
 // Cuánto ha bajado la barra sola desde esa hora (en puntos de 0 a 100)
@@ -123,51 +123,58 @@ function ganarXP(id, antes, despues) {
 
   if (gana > 0) {
     nuevoMovimiento(gana, "barra", id);
-    guardarUltimaLlenada(id, { xp: gana, desde: desde, hasta: despues, hora: Date.now() });
+    guardarLlenadas(id, leerLlenadas(id).concat({ xp: gana, desde: desde, hasta: despues, hora: Date.now() }));
     flotarXP(id, gana);
-  } else {
-    guardarUltimaLlenada(id, null);
   }
   // Si el tope no dejó ganar todo, aviso con calma (una vez al día)
   if (gana < completo) avisarTope();
   return gana;
 }
 
-// La bajé a mano de "antes" a "despues": devuelvo el XP de la parte de la última llenada que bajé.
-// Ejemplo: la llené de 0 a 100 (200 XP) y me equivoqué de barra: la bajo a 0 y se devuelven los 200.
+// La bajé a mano de "antes" a "despues": devuelvo el XP de todas las llenadas que tenía adentro
+// en la parte que bajé. Ejemplo: la llené en dos partes (+238 y +67) y la bajo toda: se devuelven las dos.
 function bajarAMano(id, antes, despues) {
-  const llenada = leerUltimaLlenada(id);
+  const llenadas = leerLlenadas(id);
   // Recuerdo cómo estaba todo, por si deshago esta bajada
-  localStorage.setItem(id + "-xpBajada", JSON.stringify({
-    llenada: localStorage.getItem(id + "-xpUltimo"),
+  const comoEstaba = {
+    llenadas: localStorage.getItem(id + "-xpLlenadas"),
     techo: localStorage.getItem(id + "-techo"),
     devuelto: 0,
-  }));
+  };
 
-  let techoNuevo = antes; // Hasta dónde tenía XP ganado que no se devuelve
-  if (llenada && llenada.desde !== null) {
-    // Esa llenada también se ha ido vaciando con el tiempo, igual que la barra
+  let devuelto = 0;
+  const tapados = []; // Las partes de lo que bajé que sí venían de una llenada (esas ya se devolvieron)
+  for (const llenada of llenadas) {
+    if (llenada.desde === null) continue; // De una versión vieja: no sé de qué parte vino
+    // Cada llenada también se ha ido vaciando con el tiempo, igual que la barra
     const bajo = bajadaDesde(id, llenada.hora);
     const arriba = Math.min(antes, llenada.hasta - bajo);
     const abajo = Math.max(despues, llenada.desde - bajo);
-    const parte = Math.max(0, arriba - abajo);
-    if (parte > 0) {
-      const devuelto = Math.min(llenada.xp, Math.round(llenada.xp * parte / (llenada.hasta - llenada.desde)));
-      if (devuelto > 0) {
-        nuevoMovimiento(-devuelto, "devuelto", id);
-        flotarXP(id, -devuelto);
-        const bajada = JSON.parse(localStorage.getItem(id + "-xpBajada"));
-        bajada.devuelto = devuelto;
-        localStorage.setItem(id + "-xpBajada", JSON.stringify(bajada));
-      }
-      // Lo que queda de esa llenada es la parte de abajo, la que no bajé
-      llenada.xp -= devuelto;
-      llenada.hasta = abajo + bajo;
-      guardarUltimaLlenada(id, llenada);
-      techoNuevo = abajo; // Lo de arriba ya se devolvió: volver a subirlo sí da XP otra vez
-    }
+    const parte = arriba - abajo;
+    if (parte <= 0) continue;
+    const esta = Math.min(llenada.xp, Math.round(llenada.xp * parte / (llenada.hasta - llenada.desde)));
+    devuelto += esta;
+    llenada.xp -= esta;
+    llenada.hasta -= parte; // Se queda con lo de abajo, lo que no bajé
+    tapados.push([abajo, arriba]);
   }
-  if (techoNuevo > despues) marcarTecho(id, techoNuevo);
+  guardarLlenadas(id, llenadas);
+
+  if (devuelto > 0) {
+    nuevoMovimiento(-devuelto, "devuelto", id);
+    flotarXP(id, -devuelto);
+    comoEstaba.devuelto = devuelto;
+  }
+  localStorage.setItem(id + "-xpBajada", JSON.stringify(comoEstaba));
+
+  // Lo que bajé y que NO venía de ninguna llenada que recuerde es XP de antes: queda como techo.
+  // Busco, desde arriba, el primer punto que no tape ninguna llenada.
+  let punto = antes;
+  tapados.sort((a, b) => b[1] - a[1]);
+  for (const [abajo, arriba] of tapados) {
+    if (arriba >= punto - 0.5) punto = Math.min(punto, abajo);
+  }
+  if (punto > despues + 0.5) marcarTecho(id, punto);
 }
 
 // Deshacer: si lo último fue llenarla, devuelve lo que dio esa llenada;
@@ -177,16 +184,17 @@ function devolverXP(id) {
   if (bajada !== null) {
     const antes = JSON.parse(bajada);
     localStorage.removeItem(id + "-xpBajada");
-    if (antes.llenada === null) localStorage.removeItem(id + "-xpUltimo");
-    else localStorage.setItem(id + "-xpUltimo", antes.llenada);
+    if (antes.llenadas === null) localStorage.removeItem(id + "-xpLlenadas");
+    else localStorage.setItem(id + "-xpLlenadas", antes.llenadas);
     if (antes.techo === null) localStorage.removeItem(id + "-techo");
     else localStorage.setItem(id + "-techo", antes.techo);
     if (antes.devuelto > 0) nuevoMovimiento(antes.devuelto, "deshacer", id);
     return;
   }
-  const llenada = leerUltimaLlenada(id);
-  guardarUltimaLlenada(id, null);
-  if (llenada && llenada.xp > 0) nuevoMovimiento(-llenada.xp, "deshacer", id);
+  const llenadas = leerLlenadas(id);
+  const ultima = llenadas.pop();
+  guardarLlenadas(id, llenadas);
+  if (ultima && ultima.xp > 0) nuevoMovimiento(-ultima.xp, "deshacer", id);
 }
 
 function avisarTope() {
@@ -225,6 +233,17 @@ function flotarXP(id, cantidad) {
 }
 
 // ===== ARRANQUE =====
+// Mudanza (una sola vez): antes solo se recordaba la última llenada ("-xpUltimo"), y los techos
+// de esa regla vieja tapaban XP que ya se corrigió aparte. Empiezo limpio con la regla nueva.
+if (localStorage.getItem("xp-reglas") !== "2") {
+  for (const clave of Object.keys(localStorage)) {
+    if (clave.endsWith("-xpUltimo") || clave.endsWith("-techo") || clave.endsWith("-xpBajada")) {
+      localStorage.removeItem(clave);
+    }
+  }
+  localStorage.setItem("xp-reglas", "2");
+}
+
 // Bienvenida: una sola vez. Tiene un id fijo, así aunque dos dispositivos la den antes de
 // sincronizar, en la nube queda una sola (y al bajar, se juntan por id).
 if (!leerMovimientos().some(m => m.id === "bienvenida")) {

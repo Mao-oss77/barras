@@ -50,7 +50,7 @@ const PREESTABLECIDAS = [
 // Todo lo que una barra guarda en la libreta (para borrarlo cuando se quita la barra)
 // "-modo", "-puntos" y "-puntosAnterior" son de versiones viejas
 const DATOS_BARRA = ["-ultimaVez", "-duracion", "-unidad", "-anterior", "-modo",
-                     "-registro", "-contoRelleno", "-historial", "-anotoHistorial", "-techo", "-xpUltimo", "-xpBajada",
+                     "-registro", "-contoRelleno", "-historial", "-anotoHistorial", "-techo", "-xpUltimo", "-xpLlenadas", "-xpBajada",
                      "-puntos", "-puntosAnterior"];
 
 // ===== GRUPOS (LAS PESTAÑAS DE ARRIBA) =====
