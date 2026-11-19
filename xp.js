@@ -9,8 +9,10 @@
 //
 // Reglas:
 // - Al 100 % la barra no da más (no hay nada que subir).
-// - Si bajo una barra a mano y la vuelvo a subir, solo cuenta lo que pase por encima
-//   de donde estaba antes de bajarla (ese punto, "el techo", también se va vaciando con el tiempo).
+// - Si bajo una barra a mano, se devuelve el XP de su última llenada, en proporción a lo que bajé
+//   (si me equivoqué de barra y la corrijo bajándola, no me quedo con XP de más).
+// - Lo que bajé a mano y que NO venía de esa última llenada (XP de antes, que ya no se devuelve)
+//   queda como "techo": volver a subir hasta ahí no da XP de nuevo. El techo también se vacía con el tiempo.
 // - Tope de 500 XP al día sumando toda la app.
 // - 300 XP de bienvenida.
 
@@ -58,11 +60,12 @@ function saldoXP() {
   return leerMovimientos().reduce((suma, m) => suma + m.cantidad, 0);
 }
 
-// Lo que gané hoy llenando barras (lo devuelto con Deshacer se descuenta)
+// Lo que gané hoy llenando barras (lo devuelto con Deshacer o al bajar a mano se descuenta)
 function ganadoHoy() {
   const hoy = new Date().toDateString();
+  const deBarras = ["barra", "deshacer", "devuelto"];
   return leerMovimientos()
-    .filter(m => (m.motivo === "barra" || m.motivo === "deshacer") && new Date(m.hora).toDateString() === hoy)
+    .filter(m => deBarras.includes(m.motivo) && new Date(m.hora).toDateString() === hoy)
     .reduce((suma, m) => suma + m.cantidad, 0);
 }
 
@@ -83,10 +86,31 @@ function marcarTecho(id, antes) {
   localStorage.setItem(id + "-techo", Math.round(hora));
 }
 
+// ===== LA ÚLTIMA LLENADA =====
+// De cada barra recuerdo su última llenada: cuánto XP dio y de qué parte de la barra vino
+// (de qué nivel a qué nivel, y cuándo). Así sé cuánto devolver si la bajo a mano o la deshago.
+function leerUltimaLlenada(id) {
+  const guardado = localStorage.getItem(id + "-xpUltimo");
+  if (guardado === null) return null;
+  const llenada = JSON.parse(guardado);
+  // Las de la versión anterior solo guardaban el número: sirven para Deshacer, no para bajar a mano
+  return typeof llenada === "number" ? { xp: llenada, desde: null, hasta: null, hora: 0 } : llenada;
+}
+
+function guardarUltimaLlenada(id, llenada) {
+  if (!llenada || llenada.xp <= 0) localStorage.removeItem(id + "-xpUltimo");
+  else localStorage.setItem(id + "-xpUltimo", JSON.stringify(llenada));
+}
+
+// Cuánto ha bajado la barra sola desde esa hora (en puntos de 0 a 100)
+function bajadaDesde(id, hora) {
+  return ((Date.now() - hora) / leerDuracion(id)) * 100;
+}
+
 // ===== GANAR Y DEVOLVER =====
 // La barra subió de "antes" a "despues" (de 0 a 100): da el XP que toque y lo anuncia.
-// Guarda cuánto dio, para que Deshacer lo pueda devolver.
 function ganarXP(id, antes, despues) {
+  localStorage.removeItem(id + "-xpBajada"); // Lo último que hice ya no es bajarla
   const techo = nivelDelTecho(id);
   const desde = Math.max(antes, techo);           // Lo que estaba por debajo del techo ya se había ganado
   if (despues >= techo) localStorage.removeItem(id + "-techo"); // Ya lo pasó: el techo sobra
@@ -97,21 +121,70 @@ function ganarXP(id, antes, despues) {
 
   if (gana > 0) {
     nuevoMovimiento(gana, "barra", id);
-    localStorage.setItem(id + "-xpUltimo", gana);
+    guardarUltimaLlenada(id, { xp: gana, desde: desde, hasta: despues, hora: Date.now() });
     flotarXP(id, gana);
   } else {
-    localStorage.removeItem(id + "-xpUltimo");
+    guardarUltimaLlenada(id, null);
   }
   // Si el tope no dejó ganar todo, aviso con calma (una vez al día)
   if (gana < completo) avisarTope();
   return gana;
 }
 
-// Deshacer: devuelve lo que dio la última llenada de esa barra
+// La bajé a mano de "antes" a "despues": devuelvo el XP de la parte de la última llenada que bajé.
+// Ejemplo: la llené de 0 a 100 (200 XP) y me equivoqué de barra: la bajo a 0 y se devuelven los 200.
+function bajarAMano(id, antes, despues) {
+  const llenada = leerUltimaLlenada(id);
+  // Recuerdo cómo estaba todo, por si deshago esta bajada
+  localStorage.setItem(id + "-xpBajada", JSON.stringify({
+    llenada: localStorage.getItem(id + "-xpUltimo"),
+    techo: localStorage.getItem(id + "-techo"),
+    devuelto: 0,
+  }));
+
+  let techoNuevo = antes; // Hasta dónde tenía XP ganado que no se devuelve
+  if (llenada && llenada.desde !== null) {
+    // Esa llenada también se ha ido vaciando con el tiempo, igual que la barra
+    const bajo = bajadaDesde(id, llenada.hora);
+    const arriba = Math.min(antes, llenada.hasta - bajo);
+    const abajo = Math.max(despues, llenada.desde - bajo);
+    const parte = Math.max(0, arriba - abajo);
+    if (parte > 0) {
+      const devuelto = Math.min(llenada.xp, Math.round(llenada.xp * parte / (llenada.hasta - llenada.desde)));
+      if (devuelto > 0) {
+        nuevoMovimiento(-devuelto, "devuelto", id);
+        flotarXP(id, -devuelto);
+        const bajada = JSON.parse(localStorage.getItem(id + "-xpBajada"));
+        bajada.devuelto = devuelto;
+        localStorage.setItem(id + "-xpBajada", JSON.stringify(bajada));
+      }
+      // Lo que queda de esa llenada es la parte de abajo, la que no bajé
+      llenada.xp -= devuelto;
+      llenada.hasta = abajo + bajo;
+      guardarUltimaLlenada(id, llenada);
+      techoNuevo = abajo; // Lo de arriba ya se devolvió: volver a subirlo sí da XP otra vez
+    }
+  }
+  if (techoNuevo > despues) marcarTecho(id, techoNuevo);
+}
+
+// Deshacer: si lo último fue llenarla, devuelve lo que dio esa llenada;
+// si lo último fue bajarla a mano, me regresa lo que se había devuelto y deja todo como estaba.
 function devolverXP(id) {
-  const dio = Number(localStorage.getItem(id + "-xpUltimo") || 0);
-  localStorage.removeItem(id + "-xpUltimo");
-  if (dio > 0) nuevoMovimiento(-dio, "deshacer", id);
+  const bajada = localStorage.getItem(id + "-xpBajada");
+  if (bajada !== null) {
+    const antes = JSON.parse(bajada);
+    localStorage.removeItem(id + "-xpBajada");
+    if (antes.llenada === null) localStorage.removeItem(id + "-xpUltimo");
+    else localStorage.setItem(id + "-xpUltimo", antes.llenada);
+    if (antes.techo === null) localStorage.removeItem(id + "-techo");
+    else localStorage.setItem(id + "-techo", antes.techo);
+    if (antes.devuelto > 0) nuevoMovimiento(antes.devuelto, "deshacer", id);
+    return;
+  }
+  const llenada = leerUltimaLlenada(id);
+  guardarUltimaLlenada(id, null);
+  if (llenada && llenada.xp > 0) nuevoMovimiento(-llenada.xp, "deshacer", id);
 }
 
 function avisarTope() {
@@ -135,11 +208,13 @@ function flotarXP(id, cantidad) {
   const caja = barra.getBoundingClientRect();
   const globo = document.createElement("span");
   globo.className = "xp-flotante";
-  globo.textContent = "+" + cantidad.toLocaleString("es-CO") + " XP";
+  globo.textContent = (cantidad > 0 ? "+" : "−") + Math.abs(cantidad).toLocaleString("es-CO") + " XP";
+  if (cantidad < 0) globo.classList.add("devuelto");
   globo.style.left = caja.left + caja.width / 2 + "px";
   globo.style.top = caja.top + "px";
   document.body.append(globo);
   globo.addEventListener("animationend", () => globo.remove());
+  if (cantidad < 0) return; // Al devolver no hay saltito de alegría
   // La pildorita da un saltito
   const saldo = document.getElementById("saldo-xp");
   saldo.classList.remove("ganando");

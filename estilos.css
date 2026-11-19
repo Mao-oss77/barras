@@ -1208,3 +1208,9 @@ body::after,
   15%  { opacity: 1; transform: translate(-50%, -10px) scale(1); }
   100% { opacity: 0; transform: translate(-50%, -50px) scale(1); }
 }
+
+/* El "−200 XP" de cuando se devuelve: más suave, sin el color de celebrar */
+.xp-flotante.devuelto {
+  background: var(--vacio);
+  color: var(--texto-suave);
+}
