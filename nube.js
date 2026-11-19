@@ -333,6 +333,41 @@ async function sincronizarHistorial(idsBarras) {
   localStorage.setItem("nube-historial-bajado", ahora);
 }
 
+// ===== XP (los movimientos de xp.js) =====
+// Los movimientos nunca se cambian ni se borran, así que juntar es fácil:
+// subo los que falten allá, bajo todos, y me quedo con todos (sin repetir, por su id).
+async function sincronizarXP() {
+  // La primera vez en este dispositivo (o recién enlazado) subo todos; después, solo los pendientes
+  const todos = localStorage.getItem("nube-xp") !== "si";
+  const subir = new Set(todos ? leerMovimientos().map(m => m.id) : leerPendientesXP());
+  const filas = leerMovimientos()
+    .filter(m => subir.has(m.id))
+    .map(m => ({ user_id: usuario.id, id: m.id, hora: m.hora, cantidad: m.cantidad, motivo: m.motivo, barra_id: m.barra }));
+  for (let i = 0; i < filas.length; i += FILAS_POR_TANDA) {
+    revisar(await nube.from("xp").upsert(filas.slice(i, i + FILAS_POR_TANDA), { ignoreDuplicates: true }));
+  }
+  // Los quito de la fila (vuelvo a leerla: mientras subía pudieron llegar nuevos)
+  guardarPendientesXP(leerPendientesXP().filter(id => !subir.has(id)));
+  localStorage.setItem("nube-xp", "si");
+
+  // Bajo todos (de a 1000) y agrego los que no tenía (los de otros dispositivos)
+  const porId = new Map(leerMovimientos().map(m => [m.id, m]));
+  for (let desde = 0; ; desde += 1000) {
+    const respuesta = revisar(await nube.from("xp")
+      .select("id, hora, cantidad, motivo, barra_id")
+      .order("hora").order("id")
+      .range(desde, desde + 999));
+    for (const f of respuesta.data) {
+      if (!porId.has(f.id)) {
+        porId.set(f.id, { id: f.id, hora: Number(f.hora), cantidad: f.cantidad, motivo: f.motivo, barra: f.barra_id });
+      }
+    }
+    if (respuesta.data.length < 1000) break;
+  }
+  guardarMovimientos(Array.from(porId.values()).sort((a, b) => a.hora - b.hora));
+  pintarSaldo();
+}
+
 // ===== SINCRONIZAR =====
 // Sube lo pendiente, baja lo de la nube, lo junta con lo de aquí, y sube lo que quedó.
 // Si llegó algo nuevo de otro dispositivo, vuelve a abrir la app para mostrarlo.
@@ -358,6 +393,12 @@ async function sincronizar() {
 
     await sincronizarHistorial(juntas.barras.map(b => b.id));
     localStorage.setItem("nube-version", "2");
+    // El XP va aparte: si falla (por ejemplo, si todavía no existe la tabla), lo demás sí quedó
+    try {
+      await sincronizarXP();
+    } catch (error) {
+      console.warn("No se pudo sincronizar el XP (se intenta otra vez después):", error.message);
+    }
     if (cambiaAqui) location.reload(); // Algo cambió en otro dispositivo: vuelvo a abrir con lo nuevo
   } catch (error) {
     console.warn("No se pudo sincronizar (se intenta otra vez después):", error.message);
@@ -381,7 +422,9 @@ function estoyOcupado() {
 function sincronizarSiCambio() {
   if (!nubeLista()) return;
   const cambie = leerPendientes().length > 0
-    || JSON.stringify(filasLocales()) !== localStorage.getItem("nube-subido");
+    || JSON.stringify(filasLocales()) !== localStorage.getItem("nube-subido")
+    // XP pendiente, solo si el XP ya sincronizó alguna vez (si la tabla no existe, no insisto cada 5 segundos)
+    || (localStorage.getItem("nube-xp") === "si" && leerPendientesXP().length > 0);
   if (cambie) sincronizar();
 }
 
@@ -392,6 +435,7 @@ async function enlazarDispositivo() {
   localStorage.removeItem("nube-subido");
   localStorage.removeItem("nube-version");
   localStorage.removeItem("nube-historial-bajado");
+  localStorage.removeItem("nube-xp");
   guardarPendientes([]);
   const conteo = revisar(await nube.from("barras").select("id", { count: "exact", head: true }));
   if (conteo.count > 0 && localStorage.getItem("actividades") === null) {
@@ -454,7 +498,7 @@ function pintarSesion() {
 async function cerrarSesion() {
   if (!confirm("¿Cerrar sesión? Tus barras se quedan en este dispositivo, pero dejan de guardarse en la nube.")) return;
   await nube.auth.signOut();
-  for (const clave of ["nube-lista", "nube-subido", "nube-pendientes", "nube-version", "nube-historial-bajado"]) {
+  for (const clave of ["nube-lista", "nube-subido", "nube-pendientes", "nube-version", "nube-historial-bajado", "nube-xp"]) {
     localStorage.removeItem(clave);
   }
 }

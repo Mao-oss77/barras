@@ -58,11 +58,14 @@ button, input, select {
 /* ===== CABECERA: el título y el ☰ en una franja flotante ===== */
 #cabecera {
   position: relative;
+  display: flex;            /* XP a la izquierda, título en el medio, ☰ a la derecha */
+  align-items: center;
+  gap: 8px;
   max-width: 700px;
   margin: 12px auto 14px;
   width: calc(100% - 24px);
   box-sizing: border-box;
-  padding: 12px 56px;
+  padding: 10px 10px;
   border-radius: 22px;
   background: var(--vidrio);
   backdrop-filter: blur(14px);
@@ -72,9 +75,11 @@ button, input, select {
 
 /* ===== TÍTULO DE ARRIBA ===== */
 h1 {
+  flex: 1;            /* Ocupa el espacio del medio */
+  min-width: 0;
   text-align: center; /* Centrado */
   color: var(--acento);
-  font-size: 24px;
+  font-size: clamp(18px, 5vw, 24px); /* Se achica un poco en celulares angostos */
   font-weight: 800;
   letter-spacing: -0.3px;
   margin: 0;
@@ -82,10 +87,7 @@ h1 {
 
 /* ===== BOTÓN ☰ DE LA ESQUINA ===== */
 #boton-menu-principal {
-  position: absolute;   /* Dentro de la cabecera, a la derecha y centrado de alto */
-  top: 50%;
-  right: 8px;
-  transform: translateY(-50%);
+  flex-shrink: 0;
   width: 42px;
   height: 42px;
   border: none;
@@ -1148,4 +1150,61 @@ body::after,
 @keyframes aviso-entra {
   from { opacity: 0; transform: translate(-50%, 12px); }
   to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* El contador de días se puede tocar para ver qué significa */
+.dias {
+  cursor: pointer;
+}
+
+/* Quien ya arrastró barras varias veces ya no necesita la pista "Mantén y arrastra" (app.js pone la clase) */
+.ya-sabe-arrastrar .pista {
+  display: none;
+}
+
+/* ===== XP ===== */
+/* La pildorita del saldo, en la cabecera */
+#saldo-xp {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 7px 11px;
+  border: none;
+  border-radius: 999px;
+  background: var(--tinte);
+  color: var(--acento);
+  font-size: 14px;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+}
+#saldo-xp .icono {
+  width: 16px;
+  height: 16px;
+}
+/* Saltito al ganar */
+#saldo-xp.ganando {
+  animation: saltito 0.5s ease-out;
+}
+
+/* El "+70 XP" que sube desde la barra */
+.xp-flotante {
+  position: fixed;
+  z-index: 26;
+  transform: translate(-50%, 0);
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--acento);
+  color: var(--acento-texto);
+  font-size: 14px;
+  font-weight: 800;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: xp-sube 1.2s ease-out forwards;
+}
+@keyframes xp-sube {
+  0%   { opacity: 0; transform: translate(-50%, 0) scale(0.8); }
+  15%  { opacity: 1; transform: translate(-50%, -10px) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -50px) scale(1); }
 }

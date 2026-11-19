@@ -50,7 +50,7 @@ const PREESTABLECIDAS = [
 // Todo lo que una barra guarda en la libreta (para borrarlo cuando se quita la barra)
 // "-modo", "-puntos" y "-puntosAnterior" son de versiones viejas
 const DATOS_BARRA = ["-ultimaVez", "-duracion", "-unidad", "-anterior", "-modo",
-                     "-registro", "-contoRelleno", "-historial", "-anotoHistorial",
+                     "-registro", "-contoRelleno", "-historial", "-anotoHistorial", "-techo", "-xpUltimo",
                      "-puntos", "-puntosAnterior"];
 
 // ===== GRUPOS (LAS PESTAÑAS DE ARRIBA) =====
@@ -234,6 +234,7 @@ function recargar(id) {
   localStorage.setItem(id + "-anterior", leerUltimaVez(id));
   localStorage.setItem(id + "-ultimaVez", Date.now());
   anotarHistorial(id, nivelAntes, 100);
+  ganarXP(id, nivelAntes, 100); // xp.js
   actualizarBarra(id);
   // Saltito de alegría (estilos.css)
   const barra = document.getElementById("barra-" + id);
@@ -250,6 +251,7 @@ function deshacer(id) {
   if (anterior === null) return;
   localStorage.setItem(id + "-ultimaVez", anterior);
   localStorage.removeItem(id + "-anterior");
+  devolverXP(id); // Lo que había dado esa llenada (xp.js)
   if (localStorage.getItem(id + "-anotoHistorial") !== null) {
     borrarUltimoHistorial(id);
   }
@@ -310,6 +312,14 @@ function conectarArrastre(id) {
     const nivelDespues = calcularPorcentaje(id);
     if (Math.round(nivelDespues) !== Math.round(nivelAntes)) {
       anotarHistorial(id, nivelAntes, nivelDespues);
+      contarArrastre();
+      // Si la subí, gano XP; si la bajé a mano, recuerdo hasta dónde estaba (xp.js)
+      if (nivelDespues > nivelAntes) {
+        ganarXP(id, nivelAntes, nivelDespues);
+      } else {
+        marcarTecho(id, nivelAntes);
+        localStorage.removeItem(id + "-xpUltimo");
+      }
     }
   }
 
@@ -353,6 +363,21 @@ function conectarArrastre(id) {
   barra.oncontextmenu = function (evento) {
     if (seArrastra(tipoDe(id))) evento.preventDefault();
   };
+}
+
+// ===== PISTA "MANTÉN Y ARRASTRA" =====
+// Sale para que alguien nuevo sepa que esa barra se arrastra. Cuando ya arrastró barras
+// unas cuantas veces, ya aprendió: la pista se va de todas (queda el borde punteado como pista).
+const ARRASTRES_PARA_APRENDER = 3;
+
+function contarArrastre() {
+  const hechos = Number(localStorage.getItem("arrastres-hechos") || 0) + 1;
+  localStorage.setItem("arrastres-hechos", hechos);
+  if (hechos >= ARRASTRES_PARA_APRENDER) document.body.classList.add("ya-sabe-arrastrar");
+}
+
+if (Number(localStorage.getItem("arrastres-hechos") || 0) >= ARRASTRES_PARA_APRENDER) {
+  document.body.classList.add("ya-sabe-arrastrar");
 }
 
 // ===== DESPEGAR Y LLEVAR (TARJETAS Y PESTAÑAS, COMO LOS ÍCONOS DEL CELULAR) =====
@@ -690,6 +715,11 @@ function crearBarra(actividad) {
   // Conecta el botón de quitar la barra
   document.getElementById("quitar-" + actividad.id).onclick = function () {
     quitarActividad(actividad.id);
+  };
+
+  // Al tocar el contador de días, explica qué significa
+  document.getElementById("dias-" + actividad.id).onclick = function () {
+    mostrarAviso("Días en que llenaste " + actividad.nombre + ": " + contarDias(actividad.id));
   };
 
   // Conecta el botón de recargar
